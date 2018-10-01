@@ -1,14 +1,38 @@
 package com.olioo.vtw;
 
+import android.Manifest;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.olioo.vtw.bigflake.DecodeEditEncodeTest;
+import com.olioo.vtw.util.Helper;
+import com.olioo.vtw.warp.WarpArgs;
+import com.olioo.vtw.warp.Warper;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity {
 
+    public static final String TAG = "MainActivity";
+
+    public static final int HNDL_WARP_DONE = 0;
+    public static final int HNDL_PREVIEW_BMP = 1;
+    public static final int HNDL_UPDATE_PROGRESS = 2;
+
     public static Context context;
+    public static Handler handle;
+    public static WarpArgs args = new WarpArgs();
+    public static Warper warper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,7 +46,26 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
 
-        Thread th = new Thread(new Runnable() {
+        Helper.getPermissions(this, getBaseContext(), new String[]{
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+        });
+
+        //create handle
+        handle = new Handler(Looper.getMainLooper()) {
+            @Override
+            public void handleMessage(Message msg) {
+                switch (msg.what) {
+//                    case HNDL_PREVIEW_BMP: imageView.setImageBitmap((Bitmap)msg.obj); break;
+//                    case HNDL_UPDATE_PROGRESS: mainProgress.setProgress((int)msg.obj); break;
+                    case HNDL_WARP_DONE: warper = null; Log.d(TAG, "Warp done!"); break;
+                    //case HNDL_WATCH_VID: break;
+                    default: Log.d("unhandled message", msg.what+"\t"+msg.obj); break;
+                }
+            }
+        };
+
+        /*Thread th = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -32,6 +75,71 @@ public class MainActivity extends AppCompatActivity {
                     throwable.printStackTrace();
                 }
             }
-        }); th.start();
+        }); th.start();*/
+
+        //saveRawVideo();
+        start();
+    }
+
+    public void start() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                saveRawVideo();
+                while (!vidSaved) {
+                    try { Thread.sleep(1000); }
+                    catch (InterruptedException e) { e.printStackTrace(); }
+                }
+
+                args.decodePath = Environment.getExternalStorageDirectory()+"/test.mp4";
+                args.profileDecodee(args.decodePath);
+                args.encodePath = Environment.getExternalStorageDirectory()+"/out.mp4";
+                int width = args.decWidth / 4; width -= width % 16;
+                int height = args.decHeight / 4; height -= height % 16;
+                args.outWidth = width;
+                args.outHeight = height;
+                args.amount = 100;
+                args.bitrate = 690000;
+                args.frameRate = 30;
+                //args.function = WarpFunction.DistFromCenter(args);
+                Log.d("WarpArgs", args.print());
+
+                warper = new Warper();
+                //warper.batchSize = 64;
+                warper.warp();
+
+                handle.obtainMessage(HNDL_WARP_DONE).sendToTarget();
+            }
+        }).start();
+    }
+
+    public boolean vidSaved = false;
+    public void saveRawVideo() {
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+
+                //save raw video
+                String path = Environment.getExternalStorageDirectory()+"/test.mp4";
+
+                try {
+                    InputStream in = getResources().openRawResource(R.raw.video_480x360_mp4_h264_500kbps_30fps_aac_stereo_128kbps_44100hz);
+                    FileOutputStream out = new FileOutputStream(path);
+                    byte[] buff = new byte[1024];
+                    int read = 0;
+
+                    Log.d("crabby nooo", Arrays.toString(new File(Environment.getExternalStorageDirectory()+"").list()));
+
+                    while ((read = in.read(buff)) > 0)
+                        out.write(buff, 0, read);
+
+                    in.close();
+                    out.close();
+                    vidSaved = true;
+                } catch (Exception e) { e.printStackTrace(); }
+            }
+        });
+
+        thread.start();
     }
 }
