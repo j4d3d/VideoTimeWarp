@@ -3,6 +3,8 @@ package com.olioo.vtw;
 import android.Manifest;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.media.MediaScannerConnection;
+import android.net.Uri;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
@@ -10,6 +12,7 @@ import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.VideoView;
 
 import com.olioo.vtw.bigflake.DecodeEditEncodeTest;
 import com.olioo.vtw.util.Helper;
@@ -33,6 +36,8 @@ public class MainActivity extends AppCompatActivity {
     public static Handler handle;
     public static WarpArgs args = new WarpArgs();
     public static Warper warper;
+
+    VideoView videoView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,24 +63,24 @@ public class MainActivity extends AppCompatActivity {
                 switch (msg.what) {
 //                    case HNDL_PREVIEW_BMP: imageView.setImageBitmap((Bitmap)msg.obj); break;
 //                    case HNDL_UPDATE_PROGRESS: mainProgress.setProgress((int)msg.obj); break;
-                    case HNDL_WARP_DONE: warper = null; Log.d(TAG, "Warp done!"); break;
+                    case HNDL_WARP_DONE:
+                        warper = null; Log.d(TAG, "Warp done!");
+
+                        videoView.setVideoURI(Uri.parse(args.encodePath));
+                        videoView.start();
+                        break;
                     //case HNDL_WATCH_VID: break;
                     default: Log.d("unhandled message", msg.what+"\t"+msg.obj); break;
                 }
             }
         };
 
-        /*Thread th = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    DecodeEditEncodeTest test = new DecodeEditEncodeTest();
-                    test.testVideoEdit720p();
-                } catch (Throwable throwable) {
-                    throwable.printStackTrace();
-                }
-            }
-        }); th.start();*/
+        String path = Environment.getExternalStorageDirectory()+"/out.mp4";
+        //Log.d (TAG, "outExists: "+new File(path).exists());
+        videoView = findViewById(R.id.videoView);
+
+//        videoView.setVideoURI(Uri.parse(Environment.getExternalStorageDirectory()+"/out.mp4"));
+//        videoView.start();
 
         //saveRawVideo();
         start();
@@ -94,12 +99,13 @@ public class MainActivity extends AppCompatActivity {
                 args.decodePath = Environment.getExternalStorageDirectory()+"/test.mp4";
                 args.profileDecodee(args.decodePath);
                 args.encodePath = Environment.getExternalStorageDirectory()+"/out.mp4";
-                int width = args.decWidth / 4; width -= width % 16;
-                int height = args.decHeight / 4; height -= height % 16;
+                new File(args.encodePath).delete();
+                int width = args.decWidth; width -= width % 16;
+                int height = args.decHeight; height -= height % 16;
                 args.outWidth = width;
                 args.outHeight = height;
                 args.amount = 100;
-                args.bitrate = 690000;
+                args.bitrate = 6900;
                 args.frameRate = 30;
                 //args.function = WarpFunction.DistFromCenter(args);
                 Log.d("WarpArgs", args.print());
@@ -107,10 +113,24 @@ public class MainActivity extends AppCompatActivity {
                 warper = new Warper();
                 //warper.batchSize = 64;
                 warper.warp();
+                warper.release();
 
-                handle.obtainMessage(HNDL_WARP_DONE).sendToTarget();
+                File file = new File(args.encodePath);
+                MediaScannerConnection.scanFile(
+                        getApplicationContext(),
+                        new String[]{file.getAbsolutePath()},
+                        null,
+                        new MediaScannerConnection.OnScanCompletedListener() {
+                            @Override
+                            public void onScanCompleted(String path, Uri uri) {
+                                Log.d(TAG, "Scan completed: "+args.encodePath);
+                                handle.obtainMessage(HNDL_WARP_DONE).sendToTarget();
+                            }
+                        });
             }
         }).start();
+
+
     }
 
     public boolean vidSaved = false;
@@ -127,8 +147,6 @@ public class MainActivity extends AppCompatActivity {
                     FileOutputStream out = new FileOutputStream(path);
                     byte[] buff = new byte[1024];
                     int read = 0;
-
-                    Log.d("crabby nooo", Arrays.toString(new File(Environment.getExternalStorageDirectory()+"").list()));
 
                     while ((read = in.read(buff)) > 0)
                         out.write(buff, 0, read);

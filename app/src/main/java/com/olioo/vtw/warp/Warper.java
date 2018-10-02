@@ -16,6 +16,8 @@ import com.olioo.vtw.bigflake.OutputSurface;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Warper extends AndroidTestCase {
 
@@ -41,6 +43,11 @@ public class Warper extends AndroidTestCase {
     public boolean encoderInputDone, encoderOutputDone;
     /*ByteBuffer[] decoderInputBuffers, encoderOutputBuffers;
     MediaCodec.BufferInfo bufferInfo;*/
+
+    // warper logic
+    List<Long> frameTimes = new ArrayList<Long>();
+    int warpFrame = 0;
+    int currentFrame = 0;
 
     public Warper() {
         try {
@@ -216,6 +223,12 @@ public class Warper extends AndroidTestCase {
                             if (VERBOSE) Log.d(TAG, "awaiting frame");
                             outputSurface.awaitNewImage();
                             outputSurface.drawImage();
+
+                            // onFrame
+                            //if (currentFrame == )
+                            Log.d(TAG, "currentFrame: "+currentFrame);
+                            currentFrame++;
+
                             // Send it to the encoder.
                             inputSurface.setPresentationTime(info.presentationTimeUs * 1000);
                             if (VERBOSE) Log.d(TAG, "swapBuffers");
@@ -241,16 +254,40 @@ public class Warper extends AndroidTestCase {
         }
     }
 
+    public void release() {
+        if (encoder != null) {
+            encoder.stop();
+            encoder.release();
+            encoder = null;
+        } if (decoder != null) {
+            decoder.stop();
+            decoder.release();
+            decoder = null;
+        } if (outputSurface != null) {
+            //outputSurface.mTextureRender.unloadTexture();
+            outputSurface.release();
+            outputSurface = null;
+        } if (inputSurface != null) {
+            inputSurface.release();
+            inputSurface = null;
+        } if (muxer != null) {
+            if (muxerStarted) muxer.stop();
+            muxer.release();
+            muxer = null;
+        }
+    }
+
     /* this shader will take a second texture (or more) and a warpMap,
        the second tex will one of many source frames rendered onto the surface with
        additive blending based on the warpMap before outputSurface.swapBuffers is called */
     private static final String FRAGMENT_SHADER =
-            "#extension GL_OES_EGL_image_external : require\n" +
-            "precision mediump float;\n" +
-            "varying vec2 vTextureCoord;\n" +
-            "uniform samplerExternalOES sTexture;\n" +
-            "void main() {\n" +
-            "  gl_FragColor = texture2D(sTexture, vTextureCoord).rbga;\n" +
-            "}\n";
+        "#extension GL_OES_EGL_image_external : require\n" +
+        "precision mediump float;\n" +      // highp here doesn't seem to matter
+        "varying vec2 vTextureCoord;\n" +
+        "uniform samplerExternalOES sTexture;\n" +
+        "void main() {\n" +
+        "  vec4 color = texture2D(sTexture, vTextureCoord);\n" +
+        "  gl_FragColor = color * color * color * color * color * color;\n" +
+        "}\n";
 
 }

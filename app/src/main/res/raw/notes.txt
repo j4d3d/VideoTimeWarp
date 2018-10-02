@@ -1,0 +1,4 @@
+For speed, will need to mod TextureRender to create and switch between multiple textures and then do the good ol reversed batch style warp.
+Create a texture for each in a batch of warpframes, then on decodeFrame, bind each warpFrame and draw decoder's outputSurface onto it
+Will need to pass state parameters into the shader so it knows what frame it is drawing on
+Then encode the batch of textures as frames

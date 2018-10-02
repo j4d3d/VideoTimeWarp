@@ -29,7 +29,7 @@ import android.util.Log;
 /**
  * Code for rendering a texture onto a surface using OpenGL ES 2.0.
  */
-class TextureRender {
+public class TextureRender {
     private static final String TAG = "TextureRender";
     private static final int FLOAT_SIZE_BYTES = 4;
     private static final int TRIANGLE_VERTICES_DATA_STRIDE_BYTES = 5 * FLOAT_SIZE_BYTES;
@@ -44,23 +44,23 @@ class TextureRender {
     };
     private FloatBuffer mTriangleVertices;
     private static final String VERTEX_SHADER =
-            "uniform mat4 uMVPMatrix;\n" +
-                    "uniform mat4 uSTMatrix;\n" +
-                    "attribute vec4 aPosition;\n" +
-                    "attribute vec4 aTextureCoord;\n" +
-                    "varying vec2 vTextureCoord;\n" +
-                    "void main() {\n" +
-                    "  gl_Position = uMVPMatrix * aPosition;\n" +
-                    "  vTextureCoord = (uSTMatrix * aTextureCoord).xy;\n" +
-                    "}\n";
+            "uniform mat4 uMVPMatrix;\n" +          // a var representing the combined model/view/projection matrix
+            "uniform mat4 uSTMatrix;\n" +
+            "attribute vec4 aPosition;\n" +         // Pre-vertex position information we will pass in
+            "attribute vec4 aTextureCoord;\n" +     // passed in
+            "varying vec2 vTextureCoord;\n" +       // passed through
+            "void main() {\n" +
+            "  gl_Position = uMVPMatrix * aPosition;\n" +
+            "  vTextureCoord = (uSTMatrix * aTextureCoord).xy;\n" +
+            "}\n";
     private static final String FRAGMENT_SHADER =
             "#extension GL_OES_EGL_image_external : require\n" +
-                    "precision mediump float;\n" +      // highp here doesn't seem to matter
-                    "varying vec2 vTextureCoord;\n" +
-                    "uniform samplerExternalOES sTexture;\n" +
-                    "void main() {\n" +
-                    "  gl_FragColor = texture2D(sTexture, vTextureCoord);\n" +
-                    "}\n";
+            "precision mediump float;\n" +      // highp here doesn't seem to matter
+            "varying vec2 vTextureCoord;\n" +
+            "uniform samplerExternalOES sTexture;\n" +
+            "void main() {\n" +
+            "  gl_FragColor = texture2D(sTexture, vTextureCoord);\n" +
+            "}\n";
     private float[] mMVPMatrix = new float[16];
     private float[] mSTMatrix = new float[16];
     private int mProgram;
