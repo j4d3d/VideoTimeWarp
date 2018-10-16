@@ -3,6 +3,7 @@ package com.olioo.vtw;
 import android.Manifest;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.media.MediaPlayer;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Environment;
@@ -78,9 +79,16 @@ public class MainActivity extends AppCompatActivity {
         String path = Environment.getExternalStorageDirectory()+"/out.mp4";
         //Log.d (TAG, "outExists: "+new File(path).exists());
         videoView = findViewById(R.id.videoView);
+        videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener(){
+            @Override
+            public void onCompletion(MediaPlayer mediaPlayer) {
+                mediaPlayer.start();
+            }
+        });
 
-//        videoView.setVideoURI(Uri.parse(Environment.getExternalStorageDirectory()+"/out.mp4"));
-//        videoView.start();
+
+        videoView.setVideoURI(Uri.parse(Environment.getExternalStorageDirectory()+"/test.mp4"));
+        videoView.start();
 
         //saveRawVideo();
         start();
