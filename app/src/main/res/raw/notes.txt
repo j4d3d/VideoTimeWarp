@@ -1,4 +1,33 @@
-For speed, will need to mod TextureRender to create and switch between multiple textures and then do the good ol reversed batch style warp.
-Create a texture for each in a batch of warpframes, then on decodeFrame, bind each warpFrame and draw decoder's outputSurface onto it
-Will need to pass state parameters into the shader so it knows what frame it is drawing on
-Then encode the batch of textures as frames
+BATCH STYLE WARPING
+
+decode range min (drMin): batchFloor-(warpAmount-1)
+decode range max (drMax): batchFloor+(batchSize-1)
+
+ex// batchSize: 4, batchFloor: 36, warpAmount: 7, decode range: 30 - 39
+
+init step:
+    create 4 textures with FBOs
+
+batch init step:
+    clear each texture
+
+warp loop:
+    start decoding at frame: batchFloor
+    bind decoded frame texture
+    for each applicable batch frame:
+        bind batch frame fbo
+        tell shader what batch frame we are on and which we are writing to
+        pass batch frame texture into shader
+        glViewPort (render to frame)
+    when last decoded frame is reached and looped over, for each batch frame:
+        OutputSurface.awaitNewImage();
+        change TextureRender's mTextureID to batch frame texture id
+        outputSurface.drawImage();
+    shift batchFloor and seek extractor to that frame
+
+
+
+
+batchSize n performance increase over batchSize of 1:
+    about 1/batchSize, so batchSize does not need to be large to result in better performance.
+    the question is how it will be determined.
