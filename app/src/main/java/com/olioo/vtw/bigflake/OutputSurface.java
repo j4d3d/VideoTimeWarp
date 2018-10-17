@@ -58,7 +58,7 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
     private Surface mSurface;
     private Object mFrameSyncObject = new Object();     // guards mFrameAvailable
     private boolean mFrameAvailable;
-    private TextureRender mTextureRender;
+    public TextureRender mTextureRender;
     /**
      * Creates an OutputSurface backed by a pbuffer with the specifed dimensions.  The new
      * EGL context and surface will be made current.  Creates a Surface that can be passed

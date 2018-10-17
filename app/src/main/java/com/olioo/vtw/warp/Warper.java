@@ -6,6 +6,7 @@ import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaMuxer;
+import android.opengl.GLES20;
 import android.os.Build;
 import android.util.Log;
 
@@ -48,6 +49,10 @@ public class Warper extends AndroidTestCase {
     List<Long> frameTimes = new ArrayList<Long>();
     int warpFrame = 0;
     int currentFrame = 0;
+    // batch stuff
+    int batchSize = 2, batchFloor = 0;
+    int[] batFBOIds;
+    int[] batTexIds;
 
     public Warper() {
         try {
@@ -87,12 +92,46 @@ public class Warper extends AndroidTestCase {
             outputSurface.changeFragmentShader(FRAGMENT_SHADER);
             decoder.configure(inputFormat, outputSurface.getSurface(), null, 0);
             decoder.start();
+
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     public void warp() {
+        // init batch vars
+        batchFloor = 0;
+        batTexIds = new int[batchSize];
+        batFBOIds = new int[batchSize];
+        GLES20.glGenTextures(batchSize, batTexIds, 0);
+        GLES20.glGenFramebuffers(batchSize, batFBOIds, 0);
+        for (int i=0; i<batchSize; i++) {
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, batFBOIds[i]);
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE0 + 1 + i);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, batTexIds[i]);
+            GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, args.outWidth, args.outHeight, 0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null);
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+            outputSurface.mTextureRender.checkGlError("after 7");
+
+            GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, batTexIds[i], 0);
+            outputSurface.mTextureRender.checkGlError("after 8");
+
+            if (GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER) != GLES20.GL_FRAMEBUFFER_COMPLETE) {
+                throw new IllegalStateException("GL_FRAMEBUFFER status incomplete");
+            }
+
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+        }
+        outputSurface.mTextureRender.checkGlError("after batch tex/fbos initiated");
+
+        // may have trouble using GL_TEXTURE_2D and GL_TEXTURE_EXTERNAL_OES in same shader
+        // one possible solution is to render TEXTURE_EXTERNAL_OES to a TEXTURE_2D beforehand
+
+        // codec and state vars
         ByteBuffer[] decoderInputBuffers = decoder.getInputBuffers();
         ByteBuffer[] encoderOutputBuffers = encoder.getOutputBuffers();
         MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
@@ -222,6 +261,7 @@ public class Warper extends AndroidTestCase {
                             // This waits for the image and renders it after it arrives.
                             if (VERBOSE) Log.d(TAG, "awaiting frame");
                             outputSurface.awaitNewImage();
+
                             outputSurface.drawImage();
 
                             // onFrame
@@ -284,10 +324,13 @@ public class Warper extends AndroidTestCase {
         "#extension GL_OES_EGL_image_external : require\n" +
         "precision mediump float;\n" +      // highp here doesn't seem to matter
         "varying vec2 vTextureCoord;\n" +
-        "uniform samplerExternalOES sTexture;\n" +
+        "uniform samplerExternalOES sTexture;\n" + // the decoded frame
+//        "uniform sampler2D bTexture;\n" + // the texture we are actually rendering to, sampled for blending reason
+//        "uniform int bFrame;\n" +
         "void main() {\n" +
+//        "  vec4 bcolor = texture2D(bTexture, vTextureCoord);\n" +
         "  vec4 color = texture2D(sTexture, vTextureCoord);\n" +
-        "  gl_FragColor = color * color * color * color * color * color;\n" +
+        "  gl_FragColor = color.grba;\n" +
         "}\n";
 
 }
