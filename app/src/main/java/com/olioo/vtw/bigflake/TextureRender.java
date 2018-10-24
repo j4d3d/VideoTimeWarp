@@ -117,12 +117,7 @@ public class TextureRender {
     public void drawFrame(int batFrame) {
         checkGlError("onDrawFrame start");
         //st.getTransformMatrix(mSTMatrix);
-        switch (batFrame) {
-            case 0: GLES20.glClearColor(1.0f, 0.0f, 0.0f, 1.0f); break;
-            case 1: GLES20.glClearColor(0.0f, 1.0f, 0.0f, 1.0f); break;
-            case 2: GLES20.glClearColor(0.0f, 0.0f, 1.0f, 1.0f); break;
-            case 3: GLES20.glClearColor(1.0f, 0.0f, 1.0f, 1.0f); break;
-        }
+        GLES20.glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
         GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
         GLES20.glUseProgram(mProgram);
         checkGlError("glUseProgram");
@@ -148,7 +143,7 @@ public class TextureRender {
         GLES20.glFinish();
     }
 
-    /** render form decoded frame to a batch frame
+    /** render from decoded frame to a batch frame
      */
     public void drawOnBatchFrame(SurfaceTexture st, int bframe) {
         checkGlError("drawOnBatchFrame start");

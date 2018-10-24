@@ -131,7 +131,10 @@ public class Warper extends AndroidTestCase {
 
                     int chunkSize = extractor.readSampleData(inputBuf, 0);
                     if (chunkSize < 0) {
-                        endFrame = inputChunk;
+                        if (endFrame == 0) {
+                            endFrame = inputChunk;
+                            Log.d(TAG, "endframe: "+endFrame);
+                        }
                         if (letDecoderEnd) {
                             // End of stream -- send empty frame with EOS flag set.
                             decoder.queueInputBuffer(inputBufIndex, 0, 0, 0L,
@@ -208,16 +211,20 @@ public class Warper extends AndroidTestCase {
                 // but we still get information through BufferInfo.)
                 if (!decoderDone) {
                     if (encodingBatch) {
-                        Log.d(TAG, "Encoding batch at frame: "+batchFloor+batchEncodeProg);
                         // Send it to the encoder.
-                        outputSurface.drawImage(batchEncodeProg);
                         int batchFrame = batchFloor + batchEncodeProg;
-                        long batchTime = batchFrame * 1000000 / 24;
-                        inputSurface.setPresentationTime((batchFloor+batchEncodeProg) * 1000000 / 24);
+                        long batchTime = batchFrame * 1000000000L / 30;
+                        Log.d(TAG, "Encoding batch at frame: "+(batchFrame)+", "+batchTime);
+
+                        outputSurface.drawImage(batchEncodeProg);
+                        inputSurface.setPresentationTime(batchTime);
                         if (VERBOSE) Log.d(TAG, "swapBuffers");
                         inputSurface.swapBuffers();
                         batchEncodeProg++;
-                        if (batchEncodeProg == batchSize) encodingBatch = false;
+                        if (batchEncodeProg == batchSize) {
+                            batchFloor += batchSize;
+                            encodingBatch = false;
+                        }
                         continue;
                     }
 
@@ -248,14 +255,14 @@ public class Warper extends AndroidTestCase {
                         // fire.  If we don't wait, we risk rendering from the previous frame.
                         decoder.releaseOutputBuffer(decoderStatus, doRender);
                         if (doRender) {
-                            Log.d(TAG, "currentFrame: "+currentFrame);
+                            Log.d(TAG, "currentFrame: "+currentFrame+", ptime: "+info.presentationTimeUs);
                             if (currentFrame >= frameTimes.size()) frameTimes.add(info.presentationTimeUs);
 
                             // This waits for the image and renders it after it arrives.
                             if (VERBOSE) Log.d(TAG, "awaiting frame");
                             outputSurface.awaitNewImage();
                             for (int i=0; i<batchSize; i++)
-                                outputSurface.drawOnBatchImage(0);
+                                outputSurface.drawOnBatchImage(i);
 
                             // draw batch frames and seek extractor
                             if (currentFrame == batchFloor + batchSize + Warper.args.amount - 1) {
@@ -263,14 +270,18 @@ public class Warper extends AndroidTestCase {
                                 batchEncodeProg = 0;
 
                                 // seek
-                                batchFloor += batchSize;
+
                                 // if this is innacurate for whatever reason, seek to a previous time and advance extractor til time matches
                                 //extractor.seekTo(frameTimes.get(batchFloor), MediaExtractor.SEEK_TO_CLOSEST_SYNC);
                                 //currentFrame = batchFloor;
+                                currentFrame++;
                             } else currentFrame++;
 
 
                         }
+
+                        Log.d(TAG, "frameTimes: "+frameTimes);
+
                         if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
                             // forward decoder EOS to encoder
                             if (VERBOSE) Log.d(TAG, "signaling input EOS");
