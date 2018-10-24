@@ -15,7 +15,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.VideoView;
 
-import com.olioo.vtw.bigflake.DecodeEditEncodeTest;
 import com.olioo.vtw.util.Helper;
 import com.olioo.vtw.warp.WarpArgs;
 import com.olioo.vtw.warp.Warper;
@@ -112,7 +111,7 @@ public class MainActivity extends AppCompatActivity {
                 int height = args.decHeight; height -= height % 16;
                 args.outWidth = width;
                 args.outHeight = height;
-                args.amount = 100;
+                args.amount = 3;
                 args.bitrate = 690000;
                 args.frameRate = 30;
                 //args.function = WarpFunction.DistFromCenter(args);
@@ -137,8 +136,6 @@ public class MainActivity extends AppCompatActivity {
                         });
             }
         }).start();
-
-
     }
 
     public boolean vidSaved = false;
