@@ -52,7 +52,7 @@ public class Warper extends AndroidTestCase {
     // batch stuff
     boolean encodingBatch = false;
     int batchEncodeProg = 0;
-    public int batchSize = 1, batchFloor = 0;
+    public int batchSize = 4, batchFloor = 0;
 
     public Warper() {
         self = this;
@@ -224,6 +224,12 @@ public class Warper extends AndroidTestCase {
                         if (batchEncodeProg == batchSize) {
                             batchFloor += batchSize;
                             encodingBatch = false;
+                            // seek
+                            Log.d(TAG, "Seeking to frame: "+batchFloor);
+                            long time = frameTimes.get(batchFloor);
+                            extractor.seekTo(time, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+                            while (extractor.getSampleTime() < time) extractor.advance();
+                            currentFrame = batchFloor;
                         }
                         continue;
                     }
@@ -259,28 +265,27 @@ public class Warper extends AndroidTestCase {
                             if (currentFrame >= frameTimes.size()) frameTimes.add(info.presentationTimeUs);
 
                             // This waits for the image and renders it after it arrives.
-                            if (VERBOSE) Log.d(TAG, "awaiting frame");
+//                            if (VERBOSE) Log.d(TAG, "awaiting frame");
                             outputSurface.awaitNewImage();
-                            for (int i=0; i<batchSize; i++)
-                                outputSurface.drawOnBatchImage(i);
+                            for (int i=0; i<batchSize; i++) {
+                                int decOffset = currentFrame - (batchFloor + i);
+                                Log.d(TAG, "decOffset: "+decOffset);
+                                if (decOffset < 0 || decOffset >= args.amount) continue;
+                                outputSurface.drawOnBatchImage(i, decOffset, currentFrame==batchFloor+i);
+                            }
+//                                if (currentFrame-batchFloor <= i && currentFrame-batchFloor < Warper.args.amount + i)
 
-                            // draw batch frames and seek extractor
+
+                            // set mode to draw batch frames and seek extractor
                             if (currentFrame == batchFloor + batchSize + Warper.args.amount - 1) {
                                 encodingBatch = true;
                                 batchEncodeProg = 0;
 
-                                // seek
-
-                                // if this is innacurate for whatever reason, seek to a previous time and advance extractor til time matches
-                                //extractor.seekTo(frameTimes.get(batchFloor), MediaExtractor.SEEK_TO_CLOSEST_SYNC);
-                                //currentFrame = batchFloor;
-                                currentFrame++;
+                                currentFrame++; // todo: unnecessary? probly
                             } else currentFrame++;
 
 
                         }
-
-                        Log.d(TAG, "frameTimes: "+frameTimes);
 
                         if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
                             // forward decoder EOS to encoder

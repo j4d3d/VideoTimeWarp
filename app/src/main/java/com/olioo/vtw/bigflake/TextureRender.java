@@ -83,10 +83,21 @@ public class TextureRender {
             "varying vec2 vTextureCoord;\n" +
             "uniform samplerExternalOES sTexture;\n" +
             "uniform sampler2D bTexture;\n" + // the very same batch texture we are rendering to, included for blending
+
+            "uniform float decOffset;\n" + // how many frames after this batch frame is the decoded frame
+            "uniform float warpAmount;\n" + // how many frames are we warping by anyway
             "void main() {\n" +
-            "  vec4 scol = texture2D(sTexture, vTextureCoord);\n" +
-            "  vec4 bcol = texture2D(bTexture, vTextureCoord);\n" +
-            "  gl_FragColor = scol;\n" +//bcol + scol * 0.02;\n" +
+            "  vec2 coord = vTextureCoord;\n" +
+            "  coord.y = (1.0 - coord.y);\n" +
+            "  vec4 scol = texture2D(sTexture, coord);\n" +
+            "  vec4 bcol = texture2D(bTexture, coord);\n" +
+
+            "  float warp = coord.y * warpAmount;\n" +
+            "  float mod = warp - decOffset;\n" +
+            "  if(mod > 1.0) { mod = 0.0; }\n" +
+            "  if(mod > 0.0) { gl_FragColor = bcol + mod * scol; }\n" +
+
+//            "  gl_FragColor = bcol * 0.9 + scol * 0.1;\n" + //* coord.y + scol * (1.0 - coord.y);\n" +
             "}\n";
 
 
@@ -101,6 +112,7 @@ public class TextureRender {
     private int maPositionHandle, maPositionHandle2;
     private int maTextureHandle, maTextureHandle2;
     private int batFrameHandle;
+    private int decOffsetHandle, warpAmountHandle;
 
     public TextureRender() {
         mTriangleVertices = ByteBuffer.allocateDirect(
@@ -119,6 +131,7 @@ public class TextureRender {
         //st.getTransformMatrix(mSTMatrix);
         GLES20.glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
         GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
+
         GLES20.glUseProgram(mProgram);
         checkGlError("glUseProgram");
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
@@ -136,6 +149,7 @@ public class TextureRender {
         GLES20.glEnableVertexAttribArray(maTextureHandle);
         checkGlError("glEnableVertexAttribArray maTextureHandle");
         Matrix.setIdentityM(mMVPMatrix, 0);
+
         GLES20.glUniformMatrix4fv(muMVPMatrixHandle, 1, false, mMVPMatrix, 0);
         GLES20.glUniformMatrix4fv(muSTMatrixHandle, 1, false, mSTMatrix, 0);
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
@@ -145,7 +159,7 @@ public class TextureRender {
 
     /** render from decoded frame to a batch frame
      */
-    public void drawOnBatchFrame(SurfaceTexture st, int bframe) {
+    public void drawOnBatchFrame(SurfaceTexture st, int bframe, float decOffset, boolean clear) {
         checkGlError("drawOnBatchFrame start");
         st.getTransformMatrix(mSTMatrix);
 
@@ -154,14 +168,12 @@ public class TextureRender {
         GLES20.glViewport(0, 0, Warper.args.outWidth, Warper.args.outHeight);
         checkGlError("glViewport");
 
-//        GLES20.glClearColor(1.0f, 1.0f, 0.0f, 1.0f);
-        switch (bframe) {
-            case 0: GLES20.glClearColor(1.0f, 0.0f, 0.0f, 1.0f); break;
-            case 1: GLES20.glClearColor(0.0f, 1.0f, 0.0f, 1.0f); break;
-            case 2: GLES20.glClearColor(0.0f, 0.0f, 1.0f, 1.0f); break;
-            case 3: GLES20.glClearColor(1.0f, 0.0f, 1.0f, 1.0f); break;
-        }
-        GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
+        if (clear) {
+            GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
+        } else GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT);
+
+
         GLES20.glUseProgram(mProgram2);
         checkGlError("glUseProgram");
 
@@ -188,6 +200,9 @@ public class TextureRender {
         GLES20.glUniformMatrix4fv(muMVPMatrixHandle2, 1, false, mMVPMatrix, 0);
         GLES20.glUniformMatrix4fv(muSTMatrixHandle2, 1, false, mSTMatrix, 0);
         GLES20.glUniform1i(batFrameHandle, 1);
+
+        GLES20.glUniform1f(warpAmountHandle, Warper.args.amount);
+        GLES20.glUniform1f(decOffsetHandle, decOffset);
 
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
         checkGlError("glDrawArrays");
@@ -250,6 +265,18 @@ public class TextureRender {
             throw new RuntimeException("Could not get attrib location for uSTMatrix");
         }
         batFrameHandle = GLES20.glGetUniformLocation(mProgram2, "bTexture");
+        if (batFrameHandle == -1) {
+            throw new RuntimeException("Could not get attrib location for bTexture");
+        }
+        decOffsetHandle = GLES20.glGetUniformLocation(mProgram2, "decOffset");
+        if (decOffsetHandle == -1) {
+            throw new RuntimeException("Could not get attrib location for decOffset");
+        }
+        warpAmountHandle = GLES20.glGetUniformLocation(mProgram2, "warpAmount");
+        if (warpAmountHandle == -1) {
+            throw new RuntimeException("Could not get attrib location for warpAmount");
+        }
+
         int[] textures = new int[1];
         GLES20.glGenTextures(1, textures, 0);
         mTextureID = textures[0];
