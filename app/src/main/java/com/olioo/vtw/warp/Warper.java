@@ -23,7 +23,7 @@ import java.util.List;
 public class Warper extends AndroidTestCase {
 
     public final String TAG = "Warper";
-    public final boolean VERBOSE = true;
+    public final boolean VERBOSE = false;
     public final boolean WORK_AROUND_BUGS = true;
     public final int TIMEOUT_USEC = 10000;
 
@@ -52,7 +52,7 @@ public class Warper extends AndroidTestCase {
     // batch stuff
     boolean encodingBatch = false;
     int batchEncodeProg = 0;
-    public int batchSize = 4, batchFloor = 0;
+    public int batchSize = 64, batchFloor = 0;
 
     public Warper() {
         self = this;
@@ -196,7 +196,7 @@ public class Warper extends AndroidTestCase {
                         encodedData.limit(info.offset + info.size);
                         //outputData.addChunk(encodedData, info.flags, info.presentationTimeUs);
                         muxer.writeSampleData(encoderTrackIndex, encodedData, info);
-                        outputCount++; Log.d(TAG, "outputCount: "+outputCount);
+                        outputCount++; //Log.d(TAG, "outputCount: "+outputCount);
                         if (VERBOSE) Log.d(TAG, "encoder output " + info.size + " bytes");
                     }
                     outputDone = (info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
@@ -269,7 +269,6 @@ public class Warper extends AndroidTestCase {
                             outputSurface.awaitNewImage();
                             for (int i=0; i<batchSize; i++) {
                                 int decOffset = currentFrame - (batchFloor + i);
-                                Log.d(TAG, "decOffset: "+decOffset);
                                 if (decOffset < 0 || decOffset >= args.amount) continue;
                                 outputSurface.drawOnBatchImage(i, decOffset, currentFrame==batchFloor+i);
                             }

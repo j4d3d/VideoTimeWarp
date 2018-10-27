@@ -111,9 +111,9 @@ public class MainActivity extends AppCompatActivity {
                 int height = args.decHeight; height -= height % 16;
                 args.outWidth = width;
                 args.outHeight = height;
-                args.amount = 2;
-                args.bitrate = 690000;
-                args.frameRate = 30;
+                args.amount = 100;
+                args.bitrate = 69000000;
+                args.frameRate = 15;
                 //args.function = WarpFunction.DistFromCenter(args);
                 Log.d("WarpArgs", args.print());
 
