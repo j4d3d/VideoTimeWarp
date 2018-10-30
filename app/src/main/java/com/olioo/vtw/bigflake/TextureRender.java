@@ -89,8 +89,8 @@ public class TextureRender {
             "  vec2 coord = vTextureCoord;\n" +
             "  coord.y = (1.0 - coord.y);\n" +
             "  vec4 scol = texture2D(sTexture, coord);\n" +
-
-            "  float warp = coord.x * warpAmount;\n" +
+            "  float warp = (1.0 - (distance(coord, vec2(0.5, 0.5)) / sqrt(0.5))) * warpAmount;\n" +//coord.y * warpAmount;\n" +
+//            "  float warp = coord.y * warpAmount;\n" +
             "  float mod = warp - decOffset;\n" +
             "  if(mod > 2.0) { mod = 0.0; }\n" +
             "  if(mod > 1.0) { mod = 2.0 - mod; }\n" +

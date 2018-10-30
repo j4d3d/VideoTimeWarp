@@ -2,7 +2,6 @@ package com.olioo.vtw;
 
 import android.Manifest;
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.media.MediaPlayer;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
@@ -22,7 +21,6 @@ import com.olioo.vtw.warp.Warper;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -81,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
         videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener(){
             @Override
             public void onCompletion(MediaPlayer mediaPlayer) {
+//                mediaPlayer.reset();
                 mediaPlayer.start();
             }
         });
@@ -111,9 +110,9 @@ public class MainActivity extends AppCompatActivity {
                 int height = args.decHeight; height -= height % 16;
                 args.outWidth = width;
                 args.outHeight = height;
-                args.amount = 100;
+                args.amount = 120;
                 args.bitrate = 69000000;
-                args.frameRate = 15;
+//                args.frameRate = 30;
                 //args.function = WarpFunction.DistFromCenter(args);
                 Log.d("WarpArgs", args.print());
 

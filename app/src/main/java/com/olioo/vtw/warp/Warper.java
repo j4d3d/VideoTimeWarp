@@ -43,8 +43,6 @@ public class Warper extends AndroidTestCase {
 
     public boolean decoderInputDone, decoderOutputDone;
     public boolean encoderInputDone, encoderOutputDone;
-    /*ByteBuffer[] decoderInputBuffers, encoderOutputBuffers;
-    MediaCodec.BufferInfo bufferInfo;*/
 
     // warper logic
     List<Long> frameTimes = new ArrayList<Long>();
@@ -72,6 +70,18 @@ public class Warper extends AndroidTestCase {
                     break;
                 }
             }
+
+            // analyze frametimes
+            if (true) {
+                ArrayList<Long> timez = new ArrayList<>();
+                do {
+                    timez.add(extractor.getSampleTime());
+                } while (extractor.advance());
+                for (int i=1; i<timez.size(); i++)
+                    Log.d(TAG, "frameTimes "+i+": "+(timez.get(i) - timez.get(i-1)));
+            }
+
+            if ("".length()==0) return;
 
             inputFormat = extractor.getTrackFormat(decoderTrackIndex);
 
@@ -137,8 +147,7 @@ public class Warper extends AndroidTestCase {
                         }
                         if (letDecoderEnd) {
                             // End of stream -- send empty frame with EOS flag set.
-                            decoder.queueInputBuffer(inputBufIndex, 0, 0, 0L,
-                                    MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+                            decoder.queueInputBuffer(inputBufIndex, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
                             decoderInputDone = true;
                             if (VERBOSE) Log.d(TAG, "sent input EOS");
                         } else decoderReachedEnd = true;
@@ -155,10 +164,12 @@ public class Warper extends AndroidTestCase {
                     }
                 } else if (VERBOSE) Log.d(TAG, "input buffer not available");
             }
+
             // Assume output is available.  Loop until both assumptions are false.
             boolean decoderOutputAvailable = !decoderDone;
             boolean encoderOutputAvailable = true;
             while (decoderOutputAvailable || encoderOutputAvailable) {
+
                 // Start by draining any pending output from the encoder.  It's important to
                 // do this before we try to stuff any more data in.
                 int encoderStatus = encoder.dequeueOutputBuffer(info, TIMEOUT_USEC);
@@ -202,10 +213,12 @@ public class Warper extends AndroidTestCase {
                     outputDone = (info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
                     encoder.releaseOutputBuffer(encoderStatus, false);
                 }
+
                 if (encoderStatus != MediaCodec.INFO_TRY_AGAIN_LATER) {
                     // Continue attempts to drain output.
                     continue;
                 }
+
                 // Encoder is drained, check to see if we've got a new frame of output from
                 // the decoder.  (The output is going to a Surface, rather than a ByteBuffer,
                 // but we still get information through BufferInfo.)
@@ -225,11 +238,19 @@ public class Warper extends AndroidTestCase {
                             batchFloor += batchSize;
                             encodingBatch = false;
                             // seek
-                            Log.d(TAG, "Seeking to frame: "+batchFloor);
                             long time = frameTimes.get(batchFloor);
+
+                            Log.d(TAG, "Seeking to frame: "+batchFloor+", at time: "+time);
                             extractor.seekTo(time, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
-                            while (extractor.getSampleTime() < time) extractor.advance();
-                            currentFrame = batchFloor;
+//                            while (extractor.getSampleTime() < time) extractor.advance();
+                            long etime = extractor.getSampleTime();
+                            for (int i=0; i<frameTimes.size(); i++) {
+                                if (etime == frameTimes.get(i)) {
+                                    currentFrame = i;
+                                    Log.d(TAG, "sought batchFloor: " + batchFloor + ", currentFrame: " + currentFrame);
+                                    break;
+                                }
+                            }
                         }
                         continue;
                     }
@@ -267,13 +288,11 @@ public class Warper extends AndroidTestCase {
                             // This waits for the image and renders it after it arrives.
 //                            if (VERBOSE) Log.d(TAG, "awaiting frame");
                             outputSurface.awaitNewImage();
-                            for (int i=0; i<batchSize; i++) {
+                            if (currentFrame >= batchFloor) for (int i=0; i<batchSize; i++) {
                                 int decOffset = currentFrame - (batchFloor + i);
                                 if (decOffset < 0 || decOffset >= args.amount) continue;
                                 outputSurface.drawOnBatchImage(i, decOffset, currentFrame==batchFloor+i);
                             }
-//                                if (currentFrame-batchFloor <= i && currentFrame-batchFloor < Warper.args.amount + i)
-
 
                             // set mode to draw batch frames and seek extractor
                             if (currentFrame == batchFloor + batchSize + Warper.args.amount - 1) {
@@ -282,8 +301,6 @@ public class Warper extends AndroidTestCase {
 
                                 currentFrame++; // todo: unnecessary? probly
                             } else currentFrame++;
-
-
                         }
 
                         if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
@@ -298,6 +315,7 @@ public class Warper extends AndroidTestCase {
                         }
                     }
                 }
+
             }
         }
         if (inputChunk != outputCount) {
