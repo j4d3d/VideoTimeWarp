@@ -49,8 +49,9 @@ public class Warper extends AndroidTestCase {
     int currentFrame = 0;
     // batch stuff
     boolean encodingBatch = false;
-    int batchEncodeProg = 0;
-    public int batchSize = 64, batchFloor = 0;
+    long drainOlderThan = -1;
+    int batchEncodeProg = 0, batchFloor = 0;
+    public int batchSize = 16;
 
     public Warper() {
         self = this;
@@ -58,31 +59,24 @@ public class Warper extends AndroidTestCase {
         try {
             extractor = new MediaExtractor();
             extractor.setDataSource(args.decodePath);  //  IOException
-            for (int i = 0; i < extractor.getTrackCount(); i++)
-            {
+            for (int i = 0; i < extractor.getTrackCount(); i++) {
                 MediaFormat inputFormat = extractor.getTrackFormat(i);
                 String mime = inputFormat.getString(MediaFormat.KEY_MIME);
-                if (mime.startsWith("video/"))
-                {
+                if (mime.startsWith("video/")) {
                     decoderTrackIndex = i;
                     extractor.selectTrack(i);
-                    String mimeType = mime;
                     break;
                 }
             }
 
-            // analyze frametimes
-            if (true) {
-                ArrayList<Long> timez = new ArrayList<>();
-                do {
-                    timez.add(extractor.getSampleTime());
-                } while (extractor.advance());
-                for (int i=1; i<timez.size(); i++)
-                    Log.d(TAG, "frameTimes "+i+": "+(timez.get(i) - timez.get(i-1)));
-            }
+            // get frametimes
+            do { frameTimes.add(extractor.getSampleTime());
+            } while (extractor.advance());
+            extractor.seekTo(0, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+            if (extractor.getSampleTime() != frameTimes.get(0))
+                throw new RuntimeException("Failed at seeking to beginning of video. Seeked to: "+extractor.getSampleTime());
 
-            if ("".length()==0) return;
-
+            // setup formats
             inputFormat = extractor.getTrackFormat(decoderTrackIndex);
 
             outputFormat = MediaFormat.createVideoFormat(args.MIME_TYPE, args.outWidth, args.outHeight);
@@ -90,18 +84,19 @@ public class Warper extends AndroidTestCase {
             outputFormat.setInteger(MediaFormat.KEY_BIT_RATE, args.bitrate);
             outputFormat.setInteger(MediaFormat.KEY_FRAME_RATE, args.frameRate);
             outputFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, args.iframeInterval);
-            //unrecommended by bigflake, but seemingly necessary at least for my samsung s5 active
+            //unrecommended by bigflake, but seemingly necessary. at least for my samsung s5 active.
             //outputFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 0);
 
+            // config and start encoder
             encoder = MediaCodec.createEncoderByType(args.MIME_TYPE);
             encoder.configure(outputFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
             inputSurface = new InputSurface(encoder.createInputSurface());
             inputSurface.makeCurrent();
             encoder.start();
 
+            // config and start decoder
             decoder = MediaCodec.createDecoderByType(args.MIME_TYPE);
             outputSurface = new OutputSurface();
-//            outputSurface.changeFragmentShader(FRAGMENT_SHADER);
             decoder.configure(inputFormat, outputSurface.getSurface(), null, 0);
             decoder.start();
 
@@ -111,11 +106,6 @@ public class Warper extends AndroidTestCase {
     }
 
     public void warp() {
-        // init batch vars
-
-        // may have trouble using GL_TEXTURE_2D and GL_TEXTURE_EXTERNAL_OES in same shader
-        // one possible solution is to render TEXTURE_EXTERNAL_OES to a TEXTURE_2D beforehand
-
         // codec and state vars
         ByteBuffer[] decoderInputBuffers = decoder.getInputBuffers();
         ByteBuffer[] encoderOutputBuffers = encoder.getOutputBuffers();
@@ -126,9 +116,9 @@ public class Warper extends AndroidTestCase {
         boolean inputDone = false;
         boolean decoderDone = false;
 
-        int endFrame = 0;
         boolean letDecoderEnd = true; //todo: false
         boolean decoderReachedEnd = false;
+
 
         while (!outputDone) {
             if (VERBOSE) Log.d(TAG, "edit loop");
@@ -141,10 +131,6 @@ public class Warper extends AndroidTestCase {
 
                     int chunkSize = extractor.readSampleData(inputBuf, 0);
                     if (chunkSize < 0) {
-                        if (endFrame == 0) {
-                            endFrame = inputChunk;
-                            Log.d(TAG, "endframe: "+endFrame);
-                        }
                         if (letDecoderEnd) {
                             // End of stream -- send empty frame with EOS flag set.
                             decoder.queueInputBuffer(inputBufIndex, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
@@ -226,7 +212,7 @@ public class Warper extends AndroidTestCase {
                     if (encodingBatch) {
                         // Send it to the encoder.
                         int batchFrame = batchFloor + batchEncodeProg;
-                        long batchTime = batchFrame * 1000000000L / 30;
+                        long batchTime = batchFrame * 1000000000L / Warper.args.frameRate;
                         Log.d(TAG, "Encoding batch at frame: "+(batchFrame)+", "+batchTime);
 
                         outputSurface.drawImage(batchEncodeProg);
@@ -238,12 +224,12 @@ public class Warper extends AndroidTestCase {
                             batchFloor += batchSize;
                             encodingBatch = false;
                             // seek
-                            long time = frameTimes.get(batchFloor);
-
-                            Log.d(TAG, "Seeking to frame: "+batchFloor+", at time: "+time);
+                            long time = batchFloor * 1000000L / Warper.args.frameRate;
+                            Log.d(TAG, "Seeking to time: "+batchFloor+", at time: "+time);
                             extractor.seekTo(time, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
 //                            while (extractor.getSampleTime() < time) extractor.advance();
                             long etime = extractor.getSampleTime();
+                            drainOlderThan = etime; // skip and drain frames left in codec from last batch
                             for (int i=0; i<frameTimes.size(); i++) {
                                 if (etime == frameTimes.get(i)) {
                                     currentFrame = i;
@@ -283,23 +269,44 @@ public class Warper extends AndroidTestCase {
                         decoder.releaseOutputBuffer(decoderStatus, doRender);
                         if (doRender) {
                             Log.d(TAG, "currentFrame: "+currentFrame+", ptime: "+info.presentationTimeUs);
-                            if (currentFrame >= frameTimes.size()) frameTimes.add(info.presentationTimeUs);
+
 
                             // This waits for the image and renders it after it arrives.
 //                            if (VERBOSE) Log.d(TAG, "awaiting frame");
                             outputSurface.awaitNewImage();
-                            if (currentFrame >= batchFloor) for (int i=0; i<batchSize; i++) {
-                                int decOffset = currentFrame - (batchFloor + i);
-                                if (decOffset < 0 || decOffset >= args.amount) continue;
-                                outputSurface.drawOnBatchImage(i, decOffset, currentFrame==batchFloor+i);
+
+                            //todo: could just drain these frames upon signaling encodingBatch
+                            //todo: also might not need to awaitNewImage()
+                            if (drainOlderThan > 0) {
+                                if (info.presentationTimeUs > drainOlderThan) continue;
+                                else drainOlderThan = -1;
                             }
 
+                            float bfloorTime = batchFloor * (1000000f / Warper.args.frameRate);
+                            float lframeTime = frameTimes.get(Math.max(0, currentFrame-1));
+                            float nframeTime = frameTimes.get(Math.min(currentFrame+1, frameTimes.size()-1));
+                            float cframeTime = frameTimes.get(currentFrame);
+
+                            if (cframeTime >= bfloorTime)
+                                for (int i=0; i<batchSize; i++) {
+                                    float bframeTime = (batchFloor + i) * 1000000f / Warper.args.frameRate;
+                                    if (cframeTime < bframeTime) continue;
+                                    boolean clear = lframeTime < bframeTime && cframeTime >= bframeTime;
+                                    if (clear)
+                                        Log.d(TAG, "Clearing bframe: "+(batchFloor+i)+" @ bftime: "+bframeTime);
+                                    outputSurface.drawOnBatchImage(
+                                        i,
+                                        lframeTime - bframeTime,
+                                        nframeTime - bframeTime,
+                                        cframeTime - bframeTime,
+                                        clear);
+                                }
+
                             // set mode to draw batch frames and seek extractor
-                            if (currentFrame == batchFloor + batchSize + Warper.args.amount - 1) {
+                            float lbframeTime = (batchFloor + batchSize - 1) * 1000000L / Warper.args.frameRate;
+                            if (frameTimes.get(currentFrame) >= lbframeTime + Warper.args.amount) {
                                 encodingBatch = true;
                                 batchEncodeProg = 0;
-
-                                currentFrame++; // todo: unnecessary? probly
                             } else currentFrame++;
                         }
 

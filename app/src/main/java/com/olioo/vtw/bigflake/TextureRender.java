@@ -77,24 +77,33 @@ public class TextureRender {
 
         and a warpmap or some hard coded warp modes
     */
+
+    /*
+        warp = coord.x * warpAmount (us)
+        if (warp > lfTime && warp < cfTime) mod = (cfTime - warp) / (cfTime - lfTime);
+     */
     private static final String FRAGMENT_SHADER2 =
             "#extension GL_OES_EGL_image_external : require\n" +
             "precision mediump float;\n" +      // highp here doesn't seem to matter
             "varying vec2 vTextureCoord;\n" +
             "uniform samplerExternalOES sTexture;\n" +
 
-            "uniform float decOffset;\n" + // how many frames after this batch frame is the decoded frame
-            "uniform float warpAmount;\n" + // how many frames are we warping by anyway
+            "uniform float lframeTime;\n" +
+            "uniform float nframeTime;\n" +
+            "uniform float cframeTime;\n" +
+            "uniform float warpAmount;\n" +
             "void main() {\n" +
             "  vec2 coord = vTextureCoord;\n" +
             "  coord.y = (1.0 - coord.y);\n" +
             "  vec4 scol = texture2D(sTexture, coord);\n" +
-            "  float warp = (1.0 - (distance(coord, vec2(0.5, 0.5)) / sqrt(0.5))) * warpAmount;\n" +//coord.y * warpAmount;\n" +
-//            "  float warp = coord.y * warpAmount;\n" +
-            "  float mod = warp - decOffset;\n" +
-            "  if(mod > 2.0) { mod = 0.0; }\n" +
-            "  if(mod > 1.0) { mod = 2.0 - mod; }\n" +
-            "  if(mod > 0.0) { gl_FragColor = abs(-mod) * (scol); }\n" +
+//            "  float warp = (1.0 - (distance(coord, vec2(0.5, 0.5)) / sqrt(0.5))) * warpAmount;\n" +
+            "  float warp = coord.y * warpAmount;\n" +
+            "  float lfDiff = cframeTime - lframeTime;\n" +
+            "  float nfDiff = nframeTime - cframeTime;\n" +
+            "  float mod = (cframeTime - warp) / lfDiff;\n" +
+//            "  if(warp > lframeTime && warp < cframeTime) { mod = (warp - lframeTime) / lfDiff; }\n" +
+//            "  if(warp > cframeTime && warp < nframeTime) { mod = (nframeTime - warp) / nfDiff; }\n" +
+            "  if (mod > 0.0 && mod <= 1.0) { gl_FragColor = mod * scol; }\n" +
             "}\n";
 
 
@@ -108,8 +117,11 @@ public class TextureRender {
     private int muSTMatrixHandle, muSTMatrixHandle2;
     private int maPositionHandle, maPositionHandle2;
     private int maTextureHandle, maTextureHandle2;
-    private int batFrameHandle;
-    private int decOffsetHandle, warpAmountHandle;
+    // uniform handles for warping
+    private int lframeTimeHandle; // time of last decoded frame (offset from time of batch frame)
+    private int nframeTimeHandle; // time of next decoded frame
+    private int cframeTimeHandle; // time of current decoded frame, being drawn to batch frame
+    private int warpAmountHandle;
 
     public TextureRender() {
         mTriangleVertices = ByteBuffer.allocateDirect(
@@ -156,7 +168,7 @@ public class TextureRender {
 
     /** render from decoded frame to a batch frame
      */
-    public void drawOnBatchFrame(SurfaceTexture st, int bframe, float decOffset, boolean clear) {
+    public void drawOnBatchFrame(SurfaceTexture st, int bframe, float lframeTime, float nframeTime, float cframeTime, boolean clear) {
         checkGlError("drawOnBatchFrame start");
         st.getTransformMatrix(mSTMatrix);
 
@@ -201,7 +213,9 @@ public class TextureRender {
         GLES20.glUniformMatrix4fv(muSTMatrixHandle2, 1, false, mSTMatrix, 0);
 
         GLES20.glUniform1f(warpAmountHandle, Warper.args.amount);
-        GLES20.glUniform1f(decOffsetHandle, decOffset);
+        GLES20.glUniform1f(lframeTimeHandle, lframeTime);
+        GLES20.glUniform1f(nframeTimeHandle, nframeTime);
+        GLES20.glUniform1f(cframeTimeHandle, cframeTime);
 
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
         checkGlError("glDrawArrays");
@@ -263,10 +277,16 @@ public class TextureRender {
         if (muSTMatrixHandle2 == -1) {
             throw new RuntimeException("Could not get attrib location for uSTMatrix");
         }
-        decOffsetHandle = GLES20.glGetUniformLocation(mProgram2, "decOffset");
-        if (decOffsetHandle == -1) {
-            throw new RuntimeException("Could not get attrib location for decOffset");
-        }
+
+        lframeTimeHandle = GLES20.glGetUniformLocation(mProgram2, "lframeTime");
+        if (lframeTimeHandle == -1)
+            throw new RuntimeException("Could not get attrib location for lframeTime");
+        nframeTimeHandle = GLES20.glGetUniformLocation(mProgram2, "nframeTime");
+        if (nframeTimeHandle == -1)
+            throw new RuntimeException("Could not get attrib location for nframeTime");
+        cframeTimeHandle = GLES20.glGetUniformLocation(mProgram2, "cframeTime");
+        if (cframeTimeHandle == -1)
+            throw new RuntimeException("Could not get attrib location for cframeTime");
         warpAmountHandle = GLES20.glGetUniformLocation(mProgram2, "warpAmount");
         if (warpAmountHandle == -1) {
             throw new RuntimeException("Could not get attrib location for warpAmount");

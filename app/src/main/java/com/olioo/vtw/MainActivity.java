@@ -73,8 +73,7 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
-        String path = Environment.getExternalStorageDirectory()+"/out.mp4";
-        //Log.d (TAG, "outExists: "+new File(path).exists());
+
         videoView = findViewById(R.id.videoView);
         videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener(){
             @Override
@@ -88,7 +87,6 @@ public class MainActivity extends AppCompatActivity {
         videoView.setVideoURI(Uri.parse(Environment.getExternalStorageDirectory()+"/test.mp4"));
         videoView.start();
 
-        //saveRawVideo();
         start();
     }
 
@@ -96,12 +94,14 @@ public class MainActivity extends AppCompatActivity {
         new Thread(new Runnable() {
             @Override
             public void run() {
+                // for testing purposes, save a small video
                 saveRawVideo();
                 while (!vidSaved) {
                     try { Thread.sleep(1000); }
                     catch (InterruptedException e) { e.printStackTrace(); }
                 }
 
+                // warp args
                 args.decodePath = Environment.getExternalStorageDirectory()+"/test.mp4";
                 args.profileDecodee(args.decodePath);
                 args.encodePath = Environment.getExternalStorageDirectory()+"/out.mp4";
@@ -110,17 +110,17 @@ public class MainActivity extends AppCompatActivity {
                 int height = args.decHeight; height -= height % 16;
                 args.outWidth = width;
                 args.outHeight = height;
-                args.amount = 120;
+                args.amount = 2000000; //us
                 args.bitrate = 69000000;
-//                args.frameRate = 30;
-                //args.function = WarpFunction.DistFromCenter(args);
+                args.frameRate = 30;
                 Log.d("WarpArgs", args.print());
 
+                // create warper and use it
                 warper = new Warper();
-                //warper.batchSize = 64;
                 warper.warp();
                 warper.release();
 
+                // mediascan the file afterwards
                 File file = new File(args.encodePath);
                 MediaScannerConnection.scanFile(
                         getApplicationContext(),

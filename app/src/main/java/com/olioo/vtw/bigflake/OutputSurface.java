@@ -239,8 +239,14 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
     public void drawImage(int batchFrame) {
         mTextureRender.drawFrame(batchFrame);
     }
-    public void drawOnBatchImage(int bframe, int decOffset, boolean clear) {
-        mTextureRender.drawOnBatchFrame(mSurfaceTexture, bframe, decOffset, clear);
+    public void drawOnBatchImage(int bframe, float lframeTime, float nframeTime, float cframeTime, boolean clear) {
+        mTextureRender.drawOnBatchFrame(
+                mSurfaceTexture,
+                bframe,
+                lframeTime,
+                nframeTime,
+                cframeTime,
+                clear);
     }
     @Override
     public void onFrameAvailable(SurfaceTexture st) {

@@ -128,7 +128,7 @@ public class WarpArgs {
         //warp paramses
         o += "\nscale:\t" + scale + "\tminScale:\t"+ minScale;
         o += "\nstartTimeUs:\t" + startTimeUs + "\tstopTimeUs:\t"+ stopTimeUs;
-        //o += "\namount:\t" + amount + "\tfunction:\t"+ function;
+        o += "\namount:\t" + amount;// + "\tfunction:\t"+ function;
         o += "\nbitrate\t:" + bitrate + "\tiframeInt:\t"+ iframeInterval;
         o += "\nspeed\t:" + speed + "\tframeRate:\t"+ frameRate;
         //out vid paramses
