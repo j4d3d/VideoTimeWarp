@@ -84,7 +84,7 @@ public class TextureRender {
      */
     private static final String FRAGMENT_SHADER2 =
             "#extension GL_OES_EGL_image_external : require\n" +
-            "precision mediump float;\n" +      // highp here doesn't seem to matter
+            "precision highp float;\n" +      // highp here DOES seem to matter
             "varying vec2 vTextureCoord;\n" +
             "uniform samplerExternalOES sTexture;\n" +
 
@@ -96,13 +96,13 @@ public class TextureRender {
             "  vec2 coord = vTextureCoord;\n" +
             "  coord.y = (1.0 - coord.y);\n" +
             "  vec4 scol = texture2D(sTexture, coord);\n" +
-//            "  float warp = (1.0 - (distance(coord, vec2(0.5, 0.5)) / sqrt(0.5))) * warpAmount;\n" +
-            "  float warp = coord.y * warpAmount;\n" +
+            "  float warp = (1.0 - (distance(coord, vec2(0.5, 0.5)) / sqrt(0.5))) * warpAmount;\n" +
+//            "  float warp = coord.y * warpAmount;\n" +
             "  float lfDiff = cframeTime - lframeTime;\n" +
             "  float nfDiff = nframeTime - cframeTime;\n" +
-            "  float mod = (cframeTime - warp) / lfDiff;\n" +
-//            "  if(warp > lframeTime && warp < cframeTime) { mod = (warp - lframeTime) / lfDiff; }\n" +
-//            "  if(warp > cframeTime && warp < nframeTime) { mod = (nframeTime - warp) / nfDiff; }\n" +
+            "  float mod = 0.0;\n"+//(cframeTime - warp) / lfDiff;\n" +
+            "  if (warp > lframeTime && warp < cframeTime) { mod = (warp - lframeTime) / lfDiff; }\n" +
+            "  if (warp > cframeTime && warp < nframeTime) { mod = (nframeTime - warp) / nfDiff; }\n" +
             "  if (mod > 0.0 && mod <= 1.0) { gl_FragColor = mod * scol; }\n" +
             "}\n";
 

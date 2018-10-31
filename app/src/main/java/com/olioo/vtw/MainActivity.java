@@ -110,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
                 int height = args.decHeight; height -= height % 16;
                 args.outWidth = width;
                 args.outHeight = height;
-                args.amount = 2000000; //us
+                args.amount = 6000000; //us
                 args.bitrate = 69000000;
                 args.frameRate = 30;
                 Log.d("WarpArgs", args.print());

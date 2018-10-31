@@ -51,7 +51,7 @@ public class Warper extends AndroidTestCase {
     boolean encodingBatch = false;
     long drainOlderThan = -1;
     int batchEncodeProg = 0, batchFloor = 0;
-    public int batchSize = 16;
+    public int batchSize = 64;
 
     public Warper() {
         self = this;
@@ -282,7 +282,7 @@ public class Warper extends AndroidTestCase {
                                 else drainOlderThan = -1;
                             }
 
-                            float bfloorTime = batchFloor * (1000000f / Warper.args.frameRate);
+                            float bfloorTime = Math.max((batchFloor-1), 0) * (1000000f / Warper.args.frameRate);
                             float lframeTime = frameTimes.get(Math.max(0, currentFrame-1));
                             float nframeTime = frameTimes.get(Math.min(currentFrame+1, frameTimes.size()-1));
                             float cframeTime = frameTimes.get(currentFrame);
