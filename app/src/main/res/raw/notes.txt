@@ -27,7 +27,12 @@ warp loop:
 
 
 
-
 batchSize n performance increase over batchSize of 1:
     about 1/batchSize, so batchSize does not need to be large to result in better performance.
     the question is how it will be determined.
+
+optimizations:
+ - frag shader could be optimized in a number of ways, but one solid one is to:
+    -: change from using ns or us to using ms. then could switch from highp to mediump precision.
+    - reduce if-statements?
+ - seeking and batchsize are the real limiters, though.

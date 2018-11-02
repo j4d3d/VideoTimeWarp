@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">VTW</string>
+
+    <string-array name="warp_modes">
+        <item>Vertical</item>
+        <item>Horizontal</item>
+        <item>Radial</item>
+        <item>Random 0-1</item>
+        <!--<item>Image/Video (coming soon)</item>-->
+        <!--<item>Custom Function (coming soon)</item>-->
+    </string-array>
 </resources>

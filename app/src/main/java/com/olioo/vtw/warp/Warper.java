@@ -18,6 +18,7 @@ import com.olioo.vtw.bigflake.OutputSurface;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class Warper extends AndroidTestCase {
@@ -51,7 +52,7 @@ public class Warper extends AndroidTestCase {
     boolean encodingBatch = false;
     long drainOlderThan = -1;
     int batchEncodeProg = 0, batchFloor = 0;
-    public int batchSize = 64;
+    public int batchSize = 16;
 
     public Warper() {
         self = this;
@@ -70,8 +71,11 @@ public class Warper extends AndroidTestCase {
             }
 
             // get frametimes
-            do { frameTimes.add(extractor.getSampleTime());
+            do {
+                long sampleTime = extractor.getSampleTime();
+                if (sampleTime != -1) frameTimes.add(extractor.getSampleTime());
             } while (extractor.advance());
+            Collections.sort(frameTimes);
             extractor.seekTo(0, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
             if (extractor.getSampleTime() != frameTimes.get(0))
                 throw new RuntimeException("Failed at seeking to beginning of video. Seeked to: "+extractor.getSampleTime());
@@ -241,6 +245,9 @@ public class Warper extends AndroidTestCase {
                         continue;
                     }
 
+//                    11-02 00:39:41.374 30372-31020/com.olioo.vtw D/Warper: currentFrame: 239, ptime: 9966666
+//                    11-02 00:39:41.454 30372-31020/com.olioo.vtw D/Warper: currentFrame: 240, ptime: 9966666
+
                     int decoderStatus = decoder.dequeueOutputBuffer(info, TIMEOUT_USEC);
                     if (decoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
                         // no output available yet
@@ -270,7 +277,6 @@ public class Warper extends AndroidTestCase {
                         if (doRender) {
                             Log.d(TAG, "currentFrame: "+currentFrame+", ptime: "+info.presentationTimeUs);
 
-
                             // This waits for the image and renders it after it arrives.
 //                            if (VERBOSE) Log.d(TAG, "awaiting frame");
                             outputSurface.awaitNewImage();
@@ -289,7 +295,7 @@ public class Warper extends AndroidTestCase {
 
                             if (cframeTime >= bfloorTime)
                                 for (int i=0; i<batchSize; i++) {
-                                    float bframeTime = (batchFloor + i) * 1000000f / Warper.args.frameRate;
+                                    float bframeTime = (batchFloor + i - 1) * 1000000f / Warper.args.frameRate;
                                     if (cframeTime < bframeTime) continue;
                                     boolean clear = lframeTime < bframeTime && cframeTime >= bframeTime;
                                     if (clear)

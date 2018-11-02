@@ -25,7 +25,6 @@ public class WarpArgs {
     public float decFrameRate;
     //decodee dependent
     public float minScale;
-    public int maxRAMFrames = 900;
 
     //ui
     //public WarpFunction function;

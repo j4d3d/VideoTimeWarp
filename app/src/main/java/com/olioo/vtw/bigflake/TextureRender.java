@@ -21,6 +21,7 @@ import java.nio.FloatBuffer;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 import android.graphics.SurfaceTexture;
+import android.opengl.GLES10;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
@@ -96,14 +97,14 @@ public class TextureRender {
             "  vec2 coord = vTextureCoord;\n" +
             "  coord.y = (1.0 - coord.y);\n" +
             "  vec4 scol = texture2D(sTexture, coord);\n" +
-            "  float warp = (1.0 - (distance(coord, vec2(0.5, 0.5)) / sqrt(0.5))) * warpAmount;\n" +
-//            "  float warp = coord.y * warpAmount;\n" +
+//            "  float warp = (1.0 - (distance(coord, vec2(0.5, 0.5)) / sqrt(0.5))) * warpAmount;\n" +
+            "  float warp = (1.0 - coord.x) * warpAmount;\n" +
             "  float lfDiff = cframeTime - lframeTime;\n" +
             "  float nfDiff = nframeTime - cframeTime;\n" +
             "  float mod = 0.0;\n"+//(cframeTime - warp) / lfDiff;\n" +
             "  if (warp > lframeTime && warp < cframeTime) { mod = (warp - lframeTime) / lfDiff; }\n" +
             "  if (warp > cframeTime && warp < nframeTime) { mod = (nframeTime - warp) / nfDiff; }\n" +
-            "  if (mod > 0.0 && mod <= 1.0) { gl_FragColor = mod * scol; }\n" +
+            "  if (mod > 0.0) { gl_FragColor = mod * scol; }\n" +
             "}\n";
 
 
@@ -181,7 +182,6 @@ public class TextureRender {
             GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
         } else GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT);
-
 
         GLES20.glUseProgram(mProgram2);
         checkGlError("glUseProgram");
@@ -306,6 +306,17 @@ public class TextureRender {
         GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T,
                 GLES20.GL_CLAMP_TO_EDGE);
         checkGlError("glTexParameter");
+
+        // calc batch size
+//        int[] maxSize = new int[1];
+//        GLES20.glGetIntegerv(GLES10.GL_MAX_TEXTURE_SIZE, maxSize, 0);
+//        int[] maxNum = new int[1];
+//        GLES20.glGetIntegerv(GLES20.GL_MAX_TEXTURE_IMAGE_UNITS, maxNum, 0);
+//        int maxPixels = maxSize[0] * maxNum[0];
+//        int sframePixels = Warper.args.decWidth * Warper.args.decHeight;
+//        int bframePixels = Warper.args.outWidth * Warper.args.outHeight;
+//        Warper.self.batchSize = (int)(Math.floor(maxPixels - sframePixels) / bframePixels);
+//        Log.d(TAG, "batchSize: "+Warper.self.batchSize);
 
         // batch vars
         batTexIds = new int[Warper.self.batchSize];
