@@ -42,9 +42,6 @@ public class Warper extends AndroidTestCase {
     MediaMuxer muxer;
     boolean muxerStarted;
 
-    public boolean decoderInputDone, decoderOutputDone;
-    public boolean encoderInputDone, encoderOutputDone;
-
     // warper logic
     List<Long> frameTimes = new ArrayList<Long>();
     int currentFrame = 0;
@@ -117,17 +114,17 @@ public class Warper extends AndroidTestCase {
         int inputChunk = 0;
         int outputCount = 0;
         boolean outputDone = false;
-        boolean inputDone = false;
+//        boolean inputDone = false;
         boolean decoderDone = false;
 
         boolean letDecoderEnd = true; //todo: false
-        boolean decoderReachedEnd = false;
+        boolean extractorReachedEnd = false;
 
 
         while (!outputDone) {
             if (VERBOSE) Log.d(TAG, "edit loop");
             // Feed more data to the decoder.
-            if (!inputDone) {
+            if (!extractorReachedEnd) {
                 int inputBufIndex = decoder.dequeueInputBuffer(TIMEOUT_USEC);
                 if (inputBufIndex >= 0) {
                     ByteBuffer inputBuf = decoderInputBuffers[inputBufIndex];
@@ -138,9 +135,9 @@ public class Warper extends AndroidTestCase {
                         if (letDecoderEnd) {
                             // End of stream -- send empty frame with EOS flag set.
                             decoder.queueInputBuffer(inputBufIndex, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-                            decoderInputDone = true;
+                            extractorReachedEnd = true;
                             if (VERBOSE) Log.d(TAG, "sent input EOS");
-                        } else decoderReachedEnd = true;
+                        }
                     } else {
                         if (extractor.getSampleTrackIndex() != decoderTrackIndex) {
                             Log.w(TAG, "WEIRD: got sample from track " + extractor.getSampleTrackIndex() + ", expected " + decoderTrackIndex);
@@ -173,6 +170,7 @@ public class Warper extends AndroidTestCase {
                 } else if (encoderStatus == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                     MediaFormat newFormat = encoder.getOutputFormat();
                     if (VERBOSE) Log.d(TAG, "encoder output format changed: " + newFormat);
+
                     //start muxer now that we have the thing
                     if (muxerStarted) throw new RuntimeException("format changed twice");
                     try {
@@ -183,6 +181,7 @@ public class Warper extends AndroidTestCase {
                     encoderTrackIndex = muxer.addTrack(newFormat);
                     muxer.start();
                     muxerStarted = true;
+
                 } else if (encoderStatus < 0) {
                     fail("unexpected result from encoder.dequeueOutputBuffer: " + encoderStatus);
                 } else { // encoderStatus >= 0
@@ -191,13 +190,12 @@ public class Warper extends AndroidTestCase {
                     if (encodedData == null) {
                         fail("encoderOutputBuffer " + encoderStatus + " was null");
                     }
-                    // Write the data to the output "file".
+                    // Write the data to the output file.
                     if (info.size != 0) {
                         encodedData.position(info.offset);
                         encodedData.limit(info.offset + info.size);
-                        //outputData.addChunk(encodedData, info.flags, info.presentationTimeUs);
                         muxer.writeSampleData(encoderTrackIndex, encodedData, info);
-                        outputCount++; //Log.d(TAG, "outputCount: "+outputCount);
+                        outputCount++;
                         if (VERBOSE) Log.d(TAG, "encoder output " + info.size + " bytes");
                     }
                     outputDone = (info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
@@ -209,41 +207,42 @@ public class Warper extends AndroidTestCase {
                     continue;
                 }
 
+                if (encodingBatch) {
+                    // Send it to the encoder.
+                    int batchFrame = batchFloor + batchEncodeProg;
+                    long batchTime = batchFrame * 1000000000L / Warper.args.frameRate;
+                    Log.d(TAG, "Encoding batch at frame: "+(batchFrame)+", "+batchTime);
+
+                    outputSurface.drawImage(batchEncodeProg);
+                    inputSurface.setPresentationTime(batchTime);
+                    if (VERBOSE) Log.d(TAG, "swapBuffers");
+                    inputSurface.swapBuffers();
+                    batchEncodeProg++;
+                    if (batchEncodeProg == batchSize) {
+                        batchFloor += batchSize;
+                        encodingBatch = false;
+                        // seek
+                        long time = batchFloor * 1000000L / Warper.args.frameRate;
+                        Log.d(TAG, "Seeking to time: "+batchFloor+", at time: "+time);
+                        extractor.seekTo(time, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+//                            while (extractor.getSampleTime() < time) extractor.advance();
+                        long etime = extractor.getSampleTime();
+                        drainOlderThan = etime; // skip and drain frames left in codec from last batch
+                        for (int i=0; i<frameTimes.size(); i++) {
+                            if (etime == frameTimes.get(i)) {
+                                currentFrame = i;
+                                Log.d(TAG, "sought batchFloor: " + batchFloor + ", currentFrame: " + currentFrame);
+                                break;
+                            }
+                        }
+                    }
+                    continue;
+                }
+
                 // Encoder is drained, check to see if we've got a new frame of output from
                 // the decoder.  (The output is going to a Surface, rather than a ByteBuffer,
                 // but we still get information through BufferInfo.)
                 if (!decoderDone) {
-                    if (encodingBatch) {
-                        // Send it to the encoder.
-                        int batchFrame = batchFloor + batchEncodeProg;
-                        long batchTime = batchFrame * 1000000000L / Warper.args.frameRate;
-                        Log.d(TAG, "Encoding batch at frame: "+(batchFrame)+", "+batchTime);
-
-                        outputSurface.drawImage(batchEncodeProg);
-                        inputSurface.setPresentationTime(batchTime);
-                        if (VERBOSE) Log.d(TAG, "swapBuffers");
-                        inputSurface.swapBuffers();
-                        batchEncodeProg++;
-                        if (batchEncodeProg == batchSize) {
-                            batchFloor += batchSize;
-                            encodingBatch = false;
-                            // seek
-                            long time = batchFloor * 1000000L / Warper.args.frameRate;
-                            Log.d(TAG, "Seeking to time: "+batchFloor+", at time: "+time);
-                            extractor.seekTo(time, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
-//                            while (extractor.getSampleTime() < time) extractor.advance();
-                            long etime = extractor.getSampleTime();
-                            drainOlderThan = etime; // skip and drain frames left in codec from last batch
-                            for (int i=0; i<frameTimes.size(); i++) {
-                                if (etime == frameTimes.get(i)) {
-                                    currentFrame = i;
-                                    Log.d(TAG, "sought batchFloor: " + batchFloor + ", currentFrame: " + currentFrame);
-                                    break;
-                                }
-                            }
-                        }
-                        continue;
-                    }
 
 //                    11-02 00:39:41.374 30372-31020/com.olioo.vtw D/Warper: currentFrame: 239, ptime: 9966666
 //                    11-02 00:39:41.454 30372-31020/com.olioo.vtw D/Warper: currentFrame: 240, ptime: 9966666
@@ -330,10 +329,6 @@ public class Warper extends AndroidTestCase {
                 }
 
             }
-        }
-        if (inputChunk != outputCount) {
-            throw new RuntimeException("frame lost: " + inputChunk + " in, " +
-                    outputCount + " out");
         }
     }
 
