@@ -73,6 +73,7 @@ public class Warper extends AndroidTestCase {
                 if (sampleTime != -1) frameTimes.add(extractor.getSampleTime());
             } while (extractor.advance());
             Collections.sort(frameTimes);
+            frameTimes.add(-1L);
             extractor.seekTo(0, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
             if (extractor.getSampleTime() != frameTimes.get(0))
                 throw new RuntimeException("Failed at seeking to beginning of video. Seeked to: "+extractor.getSampleTime());
