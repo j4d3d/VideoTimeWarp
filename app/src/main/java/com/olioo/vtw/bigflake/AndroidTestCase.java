@@ -23,8 +23,4 @@ public class AndroidTestCase {
         if (a != b) fail(msg);
     }
 
-    Context getContext() {
-        return MainActivity.context;
-    }
-
 }

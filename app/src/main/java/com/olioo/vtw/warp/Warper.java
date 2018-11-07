@@ -10,7 +10,6 @@ import android.opengl.GLES20;
 import android.os.Build;
 import android.util.Log;
 
-import com.olioo.vtw.MainActivity;
 import com.olioo.vtw.bigflake.AndroidTestCase;
 import com.olioo.vtw.bigflake.InputSurface;
 import com.olioo.vtw.bigflake.OutputSurface;
@@ -28,8 +27,8 @@ public class Warper extends AndroidTestCase {
     public final boolean WORK_AROUND_BUGS = true;
     public final int TIMEOUT_USEC = 10000;
 
-    public static WarpArgs args = MainActivity.args;
     public static Warper self;
+    public static WarpArgs args;
 
     MediaMetadataRetriever metadataRetriever;
     MediaExtractor extractor;
@@ -43,6 +42,7 @@ public class Warper extends AndroidTestCase {
     boolean muxerStarted;
 
     // warper logic
+    public boolean halt = false;
     List<Long> frameTimes = new ArrayList<Long>();
     int currentFrame = 0;
     // batch stuff
@@ -51,8 +51,9 @@ public class Warper extends AndroidTestCase {
     int batchEncodeProg = 0, batchFloor = 0;
     public int batchSize = 16;
 
-    public Warper() {
+    public Warper(WarpArgs args) {
         self = this;
+        Warper.args = args;
 
         try {
             extractor = new MediaExtractor();
@@ -211,7 +212,7 @@ public class Warper extends AndroidTestCase {
                 if (encodingBatch) {
                     // Send it to the encoder.
                     int batchFrame = batchFloor + batchEncodeProg;
-                    long batchTime = batchFrame * 1000000000L / Warper.args.frameRate;
+                    long batchTime = batchFrame * 1000000000L / args.frameRate;
                     Log.d(TAG, "Encoding batch at frame: "+(batchFrame)+", "+batchTime);
 
                     outputSurface.drawImage(batchEncodeProg);
@@ -223,7 +224,7 @@ public class Warper extends AndroidTestCase {
                         batchFloor += batchSize;
                         encodingBatch = false;
                         // seek
-                        long time = batchFloor * 1000000L / Warper.args.frameRate;
+                        long time = batchFloor * 1000000L / args.frameRate;
                         Log.d(TAG, "Seeking to time: "+batchFloor+", at time: "+time);
                         extractor.seekTo(time, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
 //                            while (extractor.getSampleTime() < time) extractor.advance();
@@ -288,14 +289,14 @@ public class Warper extends AndroidTestCase {
                                 else drainOlderThan = -1;
                             }
 
-                            float bfloorTime = Math.max((batchFloor-1), 0) * (1000000f / Warper.args.frameRate);
+                            float bfloorTime = Math.max((batchFloor-1), 0) * (1000000f / args.frameRate);
                             float lframeTime = frameTimes.get(Math.max(0, currentFrame-1));
                             float nframeTime = frameTimes.get(Math.min(currentFrame+1, frameTimes.size()-1));
                             float cframeTime = frameTimes.get(currentFrame);
 
                             if (cframeTime >= bfloorTime)
                                 for (int i=0; i<batchSize; i++) {
-                                    float bframeTime = (batchFloor + i - 1) * 1000000f / Warper.args.frameRate;
+                                    float bframeTime = (batchFloor + i - 1) * 1000000f / args.frameRate;
                                     if (cframeTime < bframeTime) continue;
                                     boolean clear = lframeTime < bframeTime && cframeTime >= bframeTime;
                                     if (clear)
@@ -309,8 +310,8 @@ public class Warper extends AndroidTestCase {
                                 }
 
                             // set mode to draw batch frames and seek extractor
-                            float lbframeTime = (batchFloor + batchSize - 1) * 1000000L / Warper.args.frameRate;
-                            if (frameTimes.get(currentFrame) >= lbframeTime + Warper.args.amount) {
+                            float lbframeTime = (batchFloor + batchSize - 1) * 1000000L / args.frameRate;
+                            if (frameTimes.get(currentFrame) >= lbframeTime + args.amount) {
                                 encodingBatch = true;
                                 batchEncodeProg = 0;
                             } else currentFrame++;

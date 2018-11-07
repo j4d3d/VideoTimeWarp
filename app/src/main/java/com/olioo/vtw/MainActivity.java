@@ -2,12 +2,14 @@ package com.olioo.vtw;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.media.MediaPlayer;
-import android.media.MediaScannerConnection;
 import android.net.Uri;
-import android.os.Environment;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
@@ -21,15 +23,9 @@ import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.VideoView;
-
 import com.olioo.vtw.gui.jEditText;
 import com.olioo.vtw.util.Helper;
-import com.olioo.vtw.warp.WarpArgs;
-import com.olioo.vtw.warp.Warper;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
+import com.olioo.vtw.warp.WarpService;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -38,12 +34,13 @@ public class MainActivity extends AppCompatActivity {
     public static final int HNDL_WARP_DONE = 0;
     public static final int HNDL_PREVIEW_BMP = 1;
     public static final int HNDL_UPDATE_PROGRESS = 2;
-    public static final int HNDL_HIDE_KEYBOARD = 2;
+    public static final int HNDL_HIDE_KEYBOARD = 3;
 
-    public static Context context;
+    public Context context;
     public static Handler handle;
-    public static WarpArgs args = new WarpArgs();
-    public static Warper warper;
+
+    public static WarpService warpService;
+    boolean serviceBound = false;
 
     VideoView videoView;
 
@@ -74,15 +71,16 @@ public class MainActivity extends AppCompatActivity {
 //                    case HNDL_PREVIEW_BMP: imageView.setImageBitmap((Bitmap)msg.obj); break;
 //                    case HNDL_UPDATE_PROGRESS: mainProgress.setProgress((int)msg.obj); break;
                     case HNDL_WARP_DONE:
-                        warper = null; Log.d(TAG, "Warp done!");
-
-                        videoView.setVideoURI(Uri.parse(args.encodePath));
+                        Log.d(TAG, "Warp done!");
+                        stopService();
+                        videoView.setVideoURI(Uri.parse(msg.obj+""));
                         videoView.start();
                         break;
                     //case HNDL_WATCH_VID: break;
                     case HNDL_HIDE_KEYBOARD:
                         InputMethodManager imm = (InputMethodManager) context.getSystemService(Activity.INPUT_METHOD_SERVICE);
-                        imm.hideSoftInputFromWindow(((jEditText)msg.obj).getWindowToken(), 0);
+                        try { imm.hideSoftInputFromWindow(((jEditText) msg.obj).getWindowToken(), 0);
+                        } catch (NullPointerException e) { e.printStackTrace(); }
                         break;
                     default: Log.d("unhandled message", msg.what+"\t"+msg.obj); break;
                 }
@@ -107,33 +105,17 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    protected void onDestroy() {
+        // unbind the service without stopping it
+        if (serviceBound) {
+            unbindService(mConnection);
+            serviceBound = false;
+        }
 
-    public boolean vidSaved = false;
-    public void saveRawVideo() {
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-            //save raw video
-            String path = Environment.getExternalStorageDirectory()+"/test.mp4";
-
-            try {
-                InputStream in = getResources().openRawResource(R.raw.video_480x360_mp4_h264_500kbps_30fps_aac_stereo_128kbps_44100hz);
-                FileOutputStream out = new FileOutputStream(path);
-                byte[] buff = new byte[1024];
-                int read = 0;
-
-                while ((read = in.read(buff)) > 0)
-                    out.write(buff, 0, read);
-
-                in.close();
-                out.close();
-                vidSaved = true;
-            } catch (Exception e) { e.printStackTrace(); }
-            }
-        });
-
-        thread.start();
+        super.onDestroy();
     }
+
 
     public jEditText boxFileName;
     public Spinner spinWarpType;
@@ -161,56 +143,43 @@ public class MainActivity extends AppCompatActivity {
         btnStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                start();
+                if (!WarpService.started) startService();
+                else stopService();
             }
         });
     }
 
-    public void start() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                // for testing purposes, save a small video
-                saveRawVideo();
-                while (!vidSaved) {
-                    try { Thread.sleep(1000); }
-                    catch (InterruptedException e) { e.printStackTrace(); }
-                }
-
-                // warp args
-                args.decodePath = Environment.getExternalStorageDirectory()+"/test.mp4";
-                args.profileDecodee(args.decodePath);
-                args.encodePath = Environment.getExternalStorageDirectory()+"/out.mp4";
-                new File(args.encodePath).delete();
-                int width = args.decWidth; width -= width % 16;
-                int height = args.decHeight; height -= height % 16;
-                args.outWidth = width;
-                args.outHeight = height;
-                args.amount = 500000; //us
-                args.bitrate = 160000000;
-                args.frameRate = 30;
-                Log.d("WarpArgs", args.print());
-
-                // create warper and use it
-                warper = new Warper();
-                warper.warp();
-                warper.release();
-
-                // mediascan the file afterwards
-                File file = new File(args.encodePath);
-                MediaScannerConnection.scanFile(
-                        getApplicationContext(),
-                        new String[]{file.getAbsolutePath()},
-                        null,
-                        new MediaScannerConnection.OnScanCompletedListener() {
-                            @Override
-                            public void onScanCompleted(String path, Uri uri) {
-                                Log.d(TAG, "Scan completed: "+args.encodePath);
-                                handle.obtainMessage(HNDL_WARP_DONE).sendToTarget();
-                            }
-                        });
-            }
-        }).start();
+    void startService() {
+        // start and bind buddy TTS service
+        if (!WarpService.started) startService(new Intent(getBaseContext(), WarpService.class));
+        bindService(new Intent(this, WarpService.class), mConnection, Context.BIND_AUTO_CREATE);
+        serviceBound = true;
     }
+
+    void stopService() {
+        // unbind the service
+        if (serviceBound) {
+            unbindService(mConnection);
+            serviceBound = false;
+        } // stop service
+        if (WarpService.started) {
+            stopService(new Intent(context, WarpService.class));
+            Log.d(TAG, "WarpService has been stopped.");
+        } else Log.d(TAG, "WarpService hasn't yet been started.");
+    }
+
+    private ServiceConnection mConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+            Log.d(TAG, "onServiceConnected");
+            warpService = ((WarpService.LocalBinder)iBinder).getInstance();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            Log.d(TAG, "onServiceDisconnected");
+            warpService = null;
+        }
+    };
 
 }
