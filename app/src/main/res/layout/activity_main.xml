@@ -231,4 +231,14 @@
 
     </android.support.constraint.ConstraintLayout>
 
+    <ProgressBar
+        android:id="@+id/progWarp"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:max="10000"/>
+
 </android.support.constraint.ConstraintLayout>

@@ -80,7 +80,7 @@ public class WarpService extends Service {
         heartbeat.schedule(new TimerTask() {
             @Override
             public void run() {
-                Log.d(TAG, "Wizrd: "+System.currentTimeMillis());
+                Log.d(TAG, "Wizrd: "+((System.currentTimeMillis()-birth)/1000f));
 //                if (System.currentTimeMillis() - birth > 5000) stopForegroundService();
             }
         }, 1000, 1000);
@@ -113,7 +113,7 @@ public class WarpService extends Service {
                 args.profileDecodee(args.decodePath);
                 args.outWidth = args.decWidth - args.decWidth % 16;
                 args.outHeight = args.decHeight - args.decHeight % 16;
-                args.bitrate = 160000000;
+                args.bitrate = 1600000;
                 args.frameRate = 30;
                 Log.d("WarpArgs", args.print());
 

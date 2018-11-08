@@ -25,6 +25,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.Switch;
@@ -78,7 +79,7 @@ public class MainActivity extends AppCompatActivity {
             public void handleMessage(Message msg) {
                 switch (msg.what) {
 //                    case HNDL_PREVIEW_BMP: imageView.setImageBitmap((Bitmap)msg.obj); break;
-//                    case HNDL_UPDATE_PROGRESS: mainProgress.setProgress((int)msg.obj); break;
+                    case HNDL_UPDATE_PROGRESS: progWarp.setProgress((int)msg.obj); break;
                     case HNDL_WARP_DONE:
                         Log.d(TAG, "Warp done!");
                         stopWarpService();
@@ -127,19 +128,12 @@ public class MainActivity extends AppCompatActivity {
     public Switch swtInvert;
     public SeekBar seekSeconds;
     public jEditText boxSeconds;
+    public ProgressBar progWarp;
 
     public Button btnStart;
     public void setupGUI() {
         lytMain = findViewById(R.id.lytMain);
         btnWarp = findViewById(R.id.btnWarp);
-        btnWarp.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                lytMain.setVisibility(View.GONE);
-                Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
-                startActivityForResult(intent, VSL_WARP);
-            }
-        });
 
         lytWarp = findViewById(R.id.lytWarp);
         boxFileName = findViewById(R.id.boxFileName);
@@ -148,6 +142,18 @@ public class MainActivity extends AppCompatActivity {
         seekSeconds = findViewById(R.id.seekSeconds);
         boxSeconds = findViewById(R.id.boxSeconds);
         btnStart = findViewById(R.id.btnStart);
+
+        progWarp = findViewById(R.id.progWarp);
+        progWarp.setProgress(5000);
+
+        btnWarp.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                lytMain.setVisibility(View.GONE);
+                Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
+                startActivityForResult(intent, VSL_WARP);
+            }
+        });
 
         // setup spinner
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,

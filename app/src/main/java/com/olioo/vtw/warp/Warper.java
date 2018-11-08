@@ -10,6 +10,7 @@ import android.opengl.GLES20;
 import android.os.Build;
 import android.util.Log;
 
+import com.olioo.vtw.MainActivity;
 import com.olioo.vtw.bigflake.AndroidTestCase;
 import com.olioo.vtw.bigflake.InputSurface;
 import com.olioo.vtw.bigflake.OutputSurface;
@@ -213,7 +214,7 @@ public class Warper extends AndroidTestCase {
                     // Send it to the encoder.
                     int batchFrame = batchFloor + batchEncodeProg;
                     long batchTime = batchFrame * 1000000000L / args.frameRate;
-                    Log.d(TAG, "Encoding batch at frame: "+(batchFrame)+", "+batchTime);
+                    if (VERBOSE) Log.d(TAG, "Encoding batch at frame: "+(batchFrame)+", "+batchTime);
 
                     outputSurface.drawImage(batchEncodeProg);
                     inputSurface.setPresentationTime(batchTime);
@@ -225,7 +226,7 @@ public class Warper extends AndroidTestCase {
                         encodingBatch = false;
                         // seek
                         long time = batchFloor * 1000000L / args.frameRate;
-                        Log.d(TAG, "Seeking to time: "+batchFloor+", at time: "+time);
+                        if (VERBOSE) Log.d(TAG, "Seeking to time: "+batchFloor+", at time: "+time);
                         extractor.seekTo(time, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
 //                            while (extractor.getSampleTime() < time) extractor.advance();
                         long etime = extractor.getSampleTime();
@@ -233,7 +234,7 @@ public class Warper extends AndroidTestCase {
                         for (int i=0; i<frameTimes.size(); i++) {
                             if (etime == frameTimes.get(i)) {
                                 currentFrame = i;
-                                Log.d(TAG, "sought batchFloor: " + batchFloor + ", currentFrame: " + currentFrame);
+                                if (VERBOSE) Log.d(TAG, "sought batchFloor: " + batchFloor + ", currentFrame: " + currentFrame);
                                 break;
                             }
                         }
@@ -276,7 +277,14 @@ public class Warper extends AndroidTestCase {
                         // fire.  If we don't wait, we risk rendering from the previous frame.
                         decoder.releaseOutputBuffer(decoderStatus, doRender);
                         if (doRender) {
-                            Log.d(TAG, "currentFrame: "+currentFrame+", ptime: "+info.presentationTimeUs);
+                            if (VERBOSE) Log.d(TAG, "currentFrame: "+currentFrame+", ptime: "+info.presentationTimeUs);
+                            if (MainActivity.handle != null)
+                                try {
+                                    float prog = (float)info.presentationTimeUs / frameTimes.get(frameTimes.size()-2);
+                                    MainActivity.handle.obtainMessage(MainActivity.HNDL_UPDATE_PROGRESS, (int)(10000*prog)).sendToTarget();
+                                } catch (NullPointerException e) {
+                                    if (VERBOSE) Log.d(TAG, "MainActivity.handle became null as we sent it a message.");
+                                }
 
                             // This waits for the image and renders it after it arrives.
 //                            if (VERBOSE) Log.d(TAG, "awaiting frame");
@@ -300,7 +308,7 @@ public class Warper extends AndroidTestCase {
                                     if (cframeTime < bframeTime) continue;
                                     boolean clear = lframeTime < bframeTime && cframeTime >= bframeTime;
                                     if (clear)
-                                        Log.d(TAG, "Clearing bframe: "+(batchFloor+i)+" @ bftime: "+bframeTime);
+                                        if (VERBOSE) Log.d(TAG, "Clearing bframe: "+(batchFloor+i)+" @ bftime: "+bframeTime);
                                     outputSurface.drawOnBatchImage(
                                         i,
                                         lframeTime - bframeTime,
