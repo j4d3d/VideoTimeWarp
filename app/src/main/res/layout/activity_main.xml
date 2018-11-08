@@ -19,13 +19,14 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <android.support.constraint.ConstraintLayout
+        android:id="@+id/lytMain"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
-        android:visibility="gone"
+        android:visibility="visible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -47,6 +48,7 @@
     </android.support.constraint.ConstraintLayout>
 
     <android.support.constraint.ConstraintLayout
+        android:id="@+id/lytWarp"
         android:layout_width="360dp"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
@@ -55,6 +57,7 @@
         android:layout_marginTop="8dp"
         android:background="@android:color/holo_blue_dark"
         android:padding="8dp"
+        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -158,6 +161,35 @@
                         android:layout_height="wrap_content"
                         android:layout_alignParentStart="true"
                         android:layout_weight="1"
+                        android:text="Invert Warptype:"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+
+                    <Switch
+                        android:id="@+id/switch2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentEnd="true"
+                        android:layout_alignParentTop="true" />
+
+                </RelativeLayout>
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginBottom="8dp"
+                    android:background="@android:color/holo_blue_light"
+                    android:orientation="horizontal"
+                    android:padding="4dp"
+                    tools:layout_editor_absoluteX="8dp"
+                    tools:layout_editor_absoluteY="8dp">
+
+                    <TextView
+                        android:id="@+id/textView3"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_weight="1"
                         android:text="Seconds:"
                         android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
@@ -165,7 +197,8 @@
                         android:id="@+id/seekSeconds"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_toEndOf="@+id/textView2"
+                        android:layout_marginTop="3dp"
+                        android:layout_toEndOf="@+id/textView3"
                         android:layout_toStartOf="@+id/boxSeconds"
                         android:layout_weight="1"
                         android:paddingLeft="4dp"

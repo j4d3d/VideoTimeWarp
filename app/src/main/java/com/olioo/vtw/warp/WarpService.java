@@ -1,7 +1,11 @@
 package com.olioo.vtw.warp;
 
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Binder;
@@ -10,7 +14,9 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.speech.tts.TextToSpeech;
 import android.support.annotation.Nullable;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.olioo.vtw.MainActivity;
 import com.olioo.vtw.R;
@@ -18,7 +24,6 @@ import com.olioo.vtw.R;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
-import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -26,27 +31,122 @@ public class WarpService extends Service {
 
     public static final String TAG = "WarpService";
 
-    public static WarpService instance;
-    public static boolean started = false;
-    public static boolean warpDone = false;
+    public static final String ACTION_START_FOREGROUND_SERVICE = "ACTION_START_FOREGROUND_SERVICE";
+    public static final String ACTION_STOP_FOREGROUND_SERVICE = "ACTION_STOP_FOREGROUND_SERVICE";
+    public static final String ACTION_STOP_WARP = "ACTION_STOP_WARP";
 
     IBinder mBinder = new LocalBinder();
 
-    WarpArgs args;
-    Warper warper;
+    public boolean started = false;
+    public boolean finished = false;
+    public WarpArgs args;
+    public Warper warper;
+
+    public Timer heartbeat;
+    public long birth = -1;
 
     @Override
     public void onCreate() {
         super.onCreate();
+        if (birth != -1) Log.d(TAG, "service wtf");
+        birth = System.currentTimeMillis();
+        heartbeat = new Timer();
+        heartbeat.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                Log.d(TAG, "Wizrd: "+System.currentTimeMillis());
+//                if (System.currentTimeMillis() - birth > 5000) stopForegroundService();
+            }
+        }, 1000, 1000);
 
-        instance = this;
-        started = true;
+        startWarp();
 
         Log.d(TAG, "OnCreate");
+    }
 
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        if(intent != null)
+        {
+            String action = intent.getAction();
+
+            switch (action) {
+                case ACTION_START_FOREGROUND_SERVICE:
+                    startForegroundService();
+                    Toast.makeText(getApplicationContext(), "Foreground service is started.", Toast.LENGTH_LONG).show();
+                    break;
+                case ACTION_STOP_FOREGROUND_SERVICE:
+                    stopForegroundService();
+                    Toast.makeText(getApplicationContext(), "Foreground service is stopped.", Toast.LENGTH_LONG).show();
+                    break;
+                case ACTION_STOP_WARP:
+                    Toast.makeText(getApplicationContext(), "You click Play button.", Toast.LENGTH_LONG).show();
+                    warper.halt = true;
+                    break;
+            }
+        }
+        return super.onStartCommand(intent, flags, startId);
+    }
+
+    /* Used to build and start foreground service. */
+    private void startForegroundService()
+    {
+        Log.d(TAG, "Start foreground service.");
+
+        // Create notification default intent.
+        Intent intent = new Intent();
+        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
+
+        // Create notification builder.
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
+
+        // Make notification show big text.
+        NotificationCompat.BigTextStyle bigTextStyle = new NotificationCompat.BigTextStyle();
+        bigTextStyle.setBigContentTitle("Time-Warping a Video.");
+        bigTextStyle.bigText("This notification will be removed when Video Time Warp is finished working. Hit stop to end the video prematurely.");
+        // Set big text style.
+        builder.setStyle(bigTextStyle);
+
+        builder.setWhen(System.currentTimeMillis());
+        builder.setSmallIcon(R.mipmap.ic_launcher);
+        Bitmap largeIconBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher_foreground);
+        builder.setLargeIcon(largeIconBitmap);
+        // Make the notification max priority.
+        builder.setPriority(Notification.PRIORITY_MAX);
+        // Make head-up notification.
+//        builder.setFullScreenIntent(pendingIntent, true);
+
+        // Add Stop button intent in notification.
+        Intent stopIntent = new Intent(this, WarpService.class);
+        stopIntent.setAction(ACTION_STOP_WARP);
+        PendingIntent pendingPlayIntent = PendingIntent.getService(this, 0, stopIntent, 0);
+        NotificationCompat.Action stopAction = new NotificationCompat.Action(android.R.drawable.ic_menu_close_clear_cancel, "Stop", pendingPlayIntent);
+        builder.addAction(stopAction);
+
+        // Build the notification.
+        Notification notification = builder.build();
+
+        // Start foreground service.
+        startForeground(1, notification);
+    }
+
+    private void stopForegroundService()
+    {
+        Log.d(TAG, "Stop foreground service.");
+
+        // Stop foreground service and remove the notification.
+        stopForeground(true);
+
+        // Stop the foreground service.
+        stopSelf();
+    }
+
+    public void startWarp() {
         new Thread(new Runnable() {
             @Override
             public void run() {
+                started = true;
+
                 // for testing purposes, save a small video
                 saveRawVideo();
                 while (!vidSaved) {
@@ -88,10 +188,11 @@ public class WarpService extends Service {
                             }
                         });
 
-                warpDone = false;
+                finished = true;
+
+                stopForegroundService();
             }
         }).start();
-
     }
 
     public boolean vidSaved = false;
@@ -137,10 +238,12 @@ public class WarpService extends Service {
     @Override
     public void onDestroy() {
         Log.d(TAG, "OnDestroy()");
-        instance = null;
-        started = false;
+        heartbeat.purge();
+        heartbeat.cancel();
         super.onDestroy();
     }
+
+
 
     public class LocalBinder extends Binder {
         public WarpService getInstance() {
