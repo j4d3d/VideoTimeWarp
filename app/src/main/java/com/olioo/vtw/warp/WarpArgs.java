@@ -28,8 +28,9 @@ public class WarpArgs {
 
     //ui
     //public WarpFunction function;
+    public int warpType;
     public boolean invertWarp;
-    public int amount;
+    public float amount;
     public int frameRate;
     public float speed;
     public long startTimeUs, stopTimeUs;
@@ -72,7 +73,7 @@ public class WarpArgs {
         }
 
         //get avg frametime
-        int samples = 10;
+        int samples = 100;
         long lt = extractor.getSampleTime();
         for (int i = 0; i < samples; i++) {
             extractor.advance();
@@ -87,7 +88,8 @@ public class WarpArgs {
 //        vidDuration = extractor.getSampleTime();
 //        startTimeUs = 0;
 //        stopTimeUs = vidDuration;
-//        extractor.release();
+
+        extractor.release();
         //just use MediaMetadataRetriever
 
         MediaMetadataRetriever mmr = new MediaMetadataRetriever();

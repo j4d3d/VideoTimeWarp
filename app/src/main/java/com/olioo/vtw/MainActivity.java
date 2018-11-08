@@ -27,9 +27,11 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.Spinner;
+import android.widget.Switch;
 import android.widget.VideoView;
 import com.olioo.vtw.gui.jEditText;
 import com.olioo.vtw.util.Helper;
+import com.olioo.vtw.warp.WarpArgs;
 import com.olioo.vtw.warp.WarpService;
 
 import java.util.List;
@@ -46,10 +48,10 @@ public class MainActivity extends AppCompatActivity {
     public static final int VSL_WARP = 0;
     public static final int VSL_WATCH = 1;
 
-    public Context context;
     public static Handler handle;
-
     public static WarpService warpService;
+
+    String decPath = null;
 
     VideoView videoView;
 
@@ -57,8 +59,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        context = getBaseContext();
     }
 
     @Override
@@ -87,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     //case HNDL_WATCH_VID: break;
                     case HNDL_HIDE_KEYBOARD:
-                        InputMethodManager imm = (InputMethodManager) context.getSystemService(Activity.INPUT_METHOD_SERVICE);
+                        InputMethodManager imm = (InputMethodManager) getBaseContext().getSystemService(Activity.INPUT_METHOD_SERVICE);
                         try { imm.hideSoftInputFromWindow(((jEditText) msg.obj).getWindowToken(), 0);
                         } catch (NullPointerException e) { e.printStackTrace(); }
                         break;
@@ -106,24 +106,15 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // bind to the service if started, or start if if not
-//        boolean serviceRunning = warpServiceRunning();
-//        Log.d(TAG, "serviceRunning:"+serviceRunning);
-//        if (serviceRunning)
-//            bindService(new Intent(this, WarpService.class), mConnection, 0);
-//        else startWarpService();
-
+        Log.d(TAG, "Instance: "+WarpService.instance);
 //        videoView.setVideoURI(Uri.parse(Environment.getExternalStorageDirectory()+"/test.mp4"));
 //        videoView.start();
     }
 
     @Override
     protected void onDestroy() {
-        // unbind the service without stopping it
-        if (warpService != null) {
-//            unbindService(mConnection);
-        }
-//        stopWarpService();
+        // set static vars to null
+        handle = null;
 
         super.onDestroy();
     }
@@ -133,8 +124,10 @@ public class MainActivity extends AppCompatActivity {
     public Button btnWarp;
     public jEditText boxFileName;
     public Spinner spinWarpType;
+    public Switch swtInvert;
     public SeekBar seekSeconds;
     public jEditText boxSeconds;
+
     public Button btnStart;
     public void setupGUI() {
         lytMain = findViewById(R.id.lytMain);
@@ -142,6 +135,7 @@ public class MainActivity extends AppCompatActivity {
         btnWarp.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                lytMain.setVisibility(View.GONE);
                 Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
                 startActivityForResult(intent, VSL_WARP);
             }
@@ -150,11 +144,12 @@ public class MainActivity extends AppCompatActivity {
         lytWarp = findViewById(R.id.lytWarp);
         boxFileName = findViewById(R.id.boxFileName);
         spinWarpType = findViewById(R.id.spinWarpType);
+        swtInvert = findViewById(R.id.swtInvert);
         seekSeconds = findViewById(R.id.seekSeconds);
         boxSeconds = findViewById(R.id.boxSeconds);
         btnStart = findViewById(R.id.btnStart);
 
-        //setup spinner
+        // setup spinner
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
                 R.array.warp_modes, android.R.layout.simple_spinner_item);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -164,12 +159,19 @@ public class MainActivity extends AppCompatActivity {
             @Override public void onNothingSelected(AdapterView p) { }
         });
 
+        // seconds slider
+        seekSeconds.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) { boxSeconds.setText(""+(progress/1000f)); }
+            @Override public void onStartTrackingTouch(SeekBar seekBar) { }
+            @Override public void onStopTrackingTouch(SeekBar seekBar) { }
+        });
+
         btnStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 startWarpService();
-                lytMain.setVisibility(View.VISIBLE);
                 lytWarp.setVisibility(View.GONE);
+                // show lytWarping
             }
         });
     }
@@ -186,29 +188,27 @@ public class MainActivity extends AppCompatActivity {
                     Runnable runnable = new Runnable() {
                         @Override
                         public void run() {
-                            //cancel previous if there is one unfinished
-                            if (warpService != null && warpService.started && !warpService.finished) {
-                                warpService.warper.halt = true;
-                                while (!warpService.finished) try {
-                                    Log.d(TAG, "Waiting for warpControl to be halted...");
-                                    Thread.sleep(100);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
+                            //halt WarpService.instance.warper if exists, catch nullpointer just in case
+                            try {
+                                if (WarpService.instance != null && WarpService.instance.started && !WarpService.instance.finished)
+                                    WarpService.instance.warper.halt = true;
+                            } catch (NullPointerException e) {
+                                Log.d(TAG, "WarpService.instance became null as warper.halt set to true. No harm done.");
                             }
 
-                            //change gui to warp window
-                            lytMain.setVisibility(View.GONE);
-                            lytWarp.setVisibility(View.VISIBLE);
+                            // wait for service to finish
+                            while (WarpService.instance != null) try {
+                                Log.d(TAG, "Waiting for Warper to be halted...");
+                                Thread.sleep(100);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
 
-                            //init args for chosen video
-                            new Thread(new Runnable() {
-                                @Override
-                                public void run() {
-//                                    args.profileDecodee(Helper.getRealPathFromURI(context, targetUri));
-//                                    Message.obtain(handle, HNDL_SET_WARP_UI).sendToTarget();
-                                }
-                            }).start();
+                            //path of chosen video
+                            decPath = Helper.getRealPathFromURI(getBaseContext(), targetUri);
+
+                            //show warp window
+                            lytWarp.setVisibility(View.VISIBLE);
                         }
                     };
 
@@ -231,63 +231,20 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    boolean warpServiceRunning() {
-        ActivityManager manager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
-        List<ActivityManager.RunningServiceInfo> services = manager.getRunningServices(Integer.MAX_VALUE);
-        int count = 0;
-        for (ActivityManager.RunningServiceInfo service : services){
-            if(WarpService.class.getName().equals(service.service.getClassName())) {
-                count++;
-//                return true;
-            }
-        }
-        Log.d(TAG, "WarpServices running: "+count);
-        return count > 0;
-    }
-
     void startWarpService() {
-        String input = "heheheeee";//editTextInput.getText().toString();
-
         Intent serviceIntent = new Intent(this, WarpService.class);
-        serviceIntent.putExtra("inputExtra", input);
+        serviceIntent.putExtra("filenameExtra", boxFileName.getText()+".mp4");
+        serviceIntent.putExtra("decodePathExtra", decPath);
+        serviceIntent.putExtra("warpTypeExtra", spinWarpType.getSelectedItemPosition());
+        serviceIntent.putExtra("invertExtra", swtInvert.isChecked());
+        serviceIntent.putExtra("secondsExtra", Float.parseFloat(boxSeconds.getText()+"")*1000000);
 
         ContextCompat.startForegroundService(this, serviceIntent);
-
-//        Intent intent = new Intent(this, WarpService.class);
-//        intent.setAction(WarpService.ACTION_START_FOREGROUND_SERVICE);
-//        startService(intent);
-
-//        startService(new Intent(this, WarpService.class));
-//        bindService(new Intent(this, WarpService.class), mConnection, 0);
     }
 
     void stopWarpService() {
         Intent serviceIntent = new Intent(this, WarpService.class);
         stopService(serviceIntent);
-
-//        Intent intent = new Intent(this, WarpService.class);
-//        intent.setAction(WarpService.ACTION_STOP_FOREGROUND_SERVICE);
-//        startService(intent);
-
-//        if (warpService != null) {
-//            unbindService(mConnection);
-//            stopService(new Intent(context, WarpService.class));
-//        }
     }
-
-//    private ServiceConnection mConnection = new ServiceConnection() {
-//        @Override
-//        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-//            Log.d(TAG, "onServiceConnected");
-//            warpService = ((WarpService.LocalBinder)iBinder).getInstance();
-//            Log.d(TAG, "Service age: "+(System.currentTimeMillis() - warpService.birth));
-//        }
-//
-//        @Override
-//        public void onServiceDisconnected(ComponentName componentName) {
-//            Log.d(TAG, "onServiceDisconnected");
-//            warpService = null;
-//        }
-//    };
 
 }

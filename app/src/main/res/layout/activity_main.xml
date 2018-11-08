@@ -165,7 +165,7 @@
                         android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
                     <Switch
-                        android:id="@+id/switch2"
+                        android:id="@+id/swtInvert"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_alignParentEnd="true"
@@ -202,7 +202,9 @@
                         android:layout_toStartOf="@+id/boxSeconds"
                         android:layout_weight="1"
                         android:paddingLeft="4dp"
-                        android:paddingRight="4dp" />
+                        android:paddingRight="4dp"
+                        android:max="10000"
+                        android:progress="1000"/>
 
                     <com.olioo.vtw.gui.jEditText
                         android:id="@+id/boxSeconds"

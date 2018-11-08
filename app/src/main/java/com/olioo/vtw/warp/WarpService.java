@@ -32,6 +32,7 @@ import static com.olioo.vtw.App.CHANNEL_ID;
 public class WarpService extends Service {
 
     public static final String TAG = "WarpService";
+    public static WarpService instance = null;
 
     public boolean started = false;
     public boolean finished = false;
@@ -45,19 +46,27 @@ public class WarpService extends Service {
     public void onCreate() {
         super.onCreate();
         Log.d(TAG, "OnCreate");
+        instance = this;
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        String input = intent.getStringExtra("inputExtra");
+        args = new WarpArgs();
+
+        args.decodePath = intent.getStringExtra("decodePathExtra");
+        String filename = intent.getStringExtra("filenameExtra");
+        args.encodePath = Environment.getExternalStorageDirectory()+"/"+filename;
+        args.warpType = intent.getIntExtra("warpTypeExtra", 0);
+        args.invertWarp = intent.getBooleanExtra("invertExtra", false);
+        args.amount = intent.getFloatExtra("secondsExtra", 1f);
 
         Intent notificationIntent = new Intent(this, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(this,
                 0, notificationIntent, 0);
 
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("Example Service")
-                .setContentText(input)
+                .setContentTitle("Video Time Warp")
+                .setContentText("Warping video: \""+filename+"\".")
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentIntent(pendingIntent)
                 .build();
@@ -66,7 +75,6 @@ public class WarpService extends Service {
 
         // my stuff
 
-        if (birth != -1) Log.d(TAG, "service wtf");
         birth = System.currentTimeMillis();
         heartbeat = new Timer();
         heartbeat.schedule(new TimerTask() {
@@ -85,59 +93,6 @@ public class WarpService extends Service {
         return START_NOT_STICKY;
     }
 
-    /* Used to build and start foreground service. */
-    private void startForegroundService()
-    {
-        Log.d(TAG, "Start foreground service.");
-
-        // Create notification default intent.
-        Intent intent = new Intent();
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, 0);
-
-        // Create notification builder.
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
-
-        // Make notification show big text.
-        NotificationCompat.BigTextStyle bigTextStyle = new NotificationCompat.BigTextStyle();
-        bigTextStyle.setBigContentTitle("Time-Warping a Video.");
-        bigTextStyle.bigText("This notification will be removed when Video Time Warp is finished working. Hit stop to end the video prematurely.");
-        // Set big text style.
-        builder.setStyle(bigTextStyle);
-
-        builder.setWhen(System.currentTimeMillis());
-        builder.setSmallIcon(R.mipmap.ic_launcher);
-        Bitmap largeIconBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher_foreground);
-        builder.setLargeIcon(largeIconBitmap);
-        // Make the notification max priority.
-        builder.setPriority(Notification.PRIORITY_MAX);
-        // Make head-up notification.
-//        builder.setFullScreenIntent(pendingIntent, true);
-
-        // Add Stop button intent in notification.
-        Intent stopIntent = new Intent(this, WarpService.class);
-//        stopIntent.setAction(ACTION_STOP_WARP);
-        PendingIntent pendingPlayIntent = PendingIntent.getService(this, 0, stopIntent, 0);
-        NotificationCompat.Action stopAction = new NotificationCompat.Action(android.R.drawable.ic_menu_close_clear_cancel, "Stop", pendingPlayIntent);
-        builder.addAction(stopAction);
-
-        // Build the notification.
-        Notification notification = builder.build();
-
-        // Start foreground service.
-        startForeground(1, notification);
-    }
-
-    private void stopForegroundService()
-    {
-        Log.d(TAG, "Stop foreground service.");
-
-        // Stop foreground service and remove the notification.
-        stopForeground(true);
-
-        // Stop the foreground service.
-        stopSelf();
-    }
-
     public void startWarp() {
         new Thread(new Runnable() {
             @Override
@@ -145,23 +100,19 @@ public class WarpService extends Service {
                 started = true;
 
                 // for testing purposes, save a small video
-                saveRawVideo();
-                while (!vidSaved) {
-                    try { Thread.sleep(1000); }
-                    catch (InterruptedException e) { e.printStackTrace(); }
-                }
+//                saveRawVideo();
+//                while (!vidSaved) {
+//                    try { Thread.sleep(1000); }
+//                    catch (InterruptedException e) { e.printStackTrace(); }
+//                }
 
-                // warp args
-                args = new WarpArgs();
-                args.decodePath = Environment.getExternalStorageDirectory()+"/test.mp4";
-                args.profileDecodee(args.decodePath);
-                args.encodePath = Environment.getExternalStorageDirectory()+"/out.mp4";
+                // delete old video at this path if it exists
                 new File(args.encodePath).delete();
-                int width = args.decWidth; width -= width % 16;
-                int height = args.decHeight; height -= height % 16;
-                args.outWidth = width;
-                args.outHeight = height;
-                args.amount = 500000; //us
+
+                // warp args that must be profiled
+                args.profileDecodee(args.decodePath);
+                args.outWidth = args.decWidth - args.decWidth % 16;
+                args.outHeight = args.decHeight - args.decHeight % 16;
                 args.bitrate = 160000000;
                 args.frameRate = 30;
                 Log.d("WarpArgs", args.print());
@@ -223,6 +174,7 @@ public class WarpService extends Service {
         Log.d(TAG, "OnDestroy()");
         heartbeat.purge();
         heartbeat.cancel();
+        instance = null;
         super.onDestroy();
     }
 
