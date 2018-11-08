@@ -27,15 +27,11 @@ import java.io.InputStream;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import static com.olioo.vtw.App.CHANNEL_ID;
+
 public class WarpService extends Service {
 
     public static final String TAG = "WarpService";
-
-    public static final String ACTION_START_FOREGROUND_SERVICE = "ACTION_START_FOREGROUND_SERVICE";
-    public static final String ACTION_STOP_FOREGROUND_SERVICE = "ACTION_STOP_FOREGROUND_SERVICE";
-    public static final String ACTION_STOP_WARP = "ACTION_STOP_WARP";
-
-    IBinder mBinder = new LocalBinder();
 
     public boolean started = false;
     public boolean finished = false;
@@ -48,6 +44,28 @@ public class WarpService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        Log.d(TAG, "OnCreate");
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        String input = intent.getStringExtra("inputExtra");
+
+        Intent notificationIntent = new Intent(this, MainActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(this,
+                0, notificationIntent, 0);
+
+        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("Example Service")
+                .setContentText(input)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentIntent(pendingIntent)
+                .build();
+
+        startForeground(1, notification);
+
+        // my stuff
+
         if (birth != -1) Log.d(TAG, "service wtf");
         birth = System.currentTimeMillis();
         heartbeat = new Timer();
@@ -61,31 +79,10 @@ public class WarpService extends Service {
 
         startWarp();
 
-        Log.d(TAG, "OnCreate");
-    }
+        //do heavy work on a background thread
+        //stopSelf();
 
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        if(intent != null)
-        {
-            String action = intent.getAction();
-
-            switch (action) {
-                case ACTION_START_FOREGROUND_SERVICE:
-                    startForegroundService();
-                    Toast.makeText(getApplicationContext(), "Foreground service is started.", Toast.LENGTH_LONG).show();
-                    break;
-                case ACTION_STOP_FOREGROUND_SERVICE:
-                    stopForegroundService();
-                    Toast.makeText(getApplicationContext(), "Foreground service is stopped.", Toast.LENGTH_LONG).show();
-                    break;
-                case ACTION_STOP_WARP:
-                    Toast.makeText(getApplicationContext(), "You click Play button.", Toast.LENGTH_LONG).show();
-                    warper.halt = true;
-                    break;
-            }
-        }
-        return super.onStartCommand(intent, flags, startId);
+        return START_NOT_STICKY;
     }
 
     /* Used to build and start foreground service. */
@@ -118,7 +115,7 @@ public class WarpService extends Service {
 
         // Add Stop button intent in notification.
         Intent stopIntent = new Intent(this, WarpService.class);
-        stopIntent.setAction(ACTION_STOP_WARP);
+//        stopIntent.setAction(ACTION_STOP_WARP);
         PendingIntent pendingPlayIntent = PendingIntent.getService(this, 0, stopIntent, 0);
         NotificationCompat.Action stopAction = new NotificationCompat.Action(android.R.drawable.ic_menu_close_clear_cancel, "Stop", pendingPlayIntent);
         builder.addAction(stopAction);
@@ -189,8 +186,7 @@ public class WarpService extends Service {
                         });
 
                 finished = true;
-
-                stopForegroundService();
+                stopSelf();
             }
         }).start();
     }
@@ -222,19 +218,6 @@ public class WarpService extends Service {
         thread.start();
     }
 
-    @Nullable
-    @Override
-    public IBinder onBind(Intent intent) {
-        Log.v(TAG, "in onBind");
-        return mBinder;
-    }
-
-    @Override
-    public void onRebind(Intent intent) {
-        Log.v(TAG, "in onRebind");
-        super.onRebind(intent);
-    }
-
     @Override
     public void onDestroy() {
         Log.d(TAG, "OnDestroy()");
@@ -243,11 +226,9 @@ public class WarpService extends Service {
         super.onDestroy();
     }
 
-
-
-    public class LocalBinder extends Binder {
-        public WarpService getInstance() {
-            return WarpService.this;
-        }
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
     }
 }

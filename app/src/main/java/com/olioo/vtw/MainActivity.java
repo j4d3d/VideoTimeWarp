@@ -15,6 +15,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.provider.MediaStore;
 import android.support.constraint.ConstraintLayout;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Layout;
@@ -245,36 +246,48 @@ public class MainActivity extends AppCompatActivity {
     }
 
     void startWarpService() {
-        Intent intent = new Intent(this, WarpService.class);
-        intent.setAction(WarpService.ACTION_START_FOREGROUND_SERVICE);
-        startService(intent);
+        String input = "heheheeee";//editTextInput.getText().toString();
+
+        Intent serviceIntent = new Intent(this, WarpService.class);
+        serviceIntent.putExtra("inputExtra", input);
+
+        ContextCompat.startForegroundService(this, serviceIntent);
+
+//        Intent intent = new Intent(this, WarpService.class);
+//        intent.setAction(WarpService.ACTION_START_FOREGROUND_SERVICE);
+//        startService(intent);
+
 //        startService(new Intent(this, WarpService.class));
 //        bindService(new Intent(this, WarpService.class), mConnection, 0);
     }
 
     void stopWarpService() {
-        Intent intent = new Intent(this, WarpService.class);
-        intent.setAction(WarpService.ACTION_STOP_FOREGROUND_SERVICE);
-        startService(intent);
+        Intent serviceIntent = new Intent(this, WarpService.class);
+        stopService(serviceIntent);
+
+//        Intent intent = new Intent(this, WarpService.class);
+//        intent.setAction(WarpService.ACTION_STOP_FOREGROUND_SERVICE);
+//        startService(intent);
+
 //        if (warpService != null) {
 //            unbindService(mConnection);
 //            stopService(new Intent(context, WarpService.class));
 //        }
     }
 
-    private ServiceConnection mConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-            Log.d(TAG, "onServiceConnected");
-            warpService = ((WarpService.LocalBinder)iBinder).getInstance();
-            Log.d(TAG, "Service age: "+(System.currentTimeMillis() - warpService.birth));
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-            Log.d(TAG, "onServiceDisconnected");
-            warpService = null;
-        }
-    };
+//    private ServiceConnection mConnection = new ServiceConnection() {
+//        @Override
+//        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+//            Log.d(TAG, "onServiceConnected");
+//            warpService = ((WarpService.LocalBinder)iBinder).getInstance();
+//            Log.d(TAG, "Service age: "+(System.currentTimeMillis() - warpService.birth));
+//        }
+//
+//        @Override
+//        public void onServiceDisconnected(ComponentName componentName) {
+//            Log.d(TAG, "onServiceDisconnected");
+//            warpService = null;
+//        }
+//    };
 
 }
