@@ -28,6 +28,7 @@ import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.util.Log;
 
+import com.olioo.vtw.warp.WarpService;
 import com.olioo.vtw.warp.Warper;
 
 /**
@@ -83,7 +84,7 @@ public class TextureRender {
         warp = coord.x * warpAmount (us)
         if (warp > lfTime && warp < cfTime) mod = (cfTime - warp) / (cfTime - lfTime);
      */
-    private static final String FRAGMENT_SHADER2 =
+    private static final String FRAGMENT_SHADER2A =
             "#extension GL_OES_EGL_image_external : require\n" +
             "precision highp float;\n" +      // highp here DOES seem to matter
             "varying vec2 vTextureCoord;\n" +
@@ -96,9 +97,10 @@ public class TextureRender {
             "void main() {\n" +
             "  vec2 coord = vTextureCoord;\n" +
             "  coord.y = (1.0 - coord.y);\n" +
-            "  vec4 scol = texture2D(sTexture, coord);\n" +
+            "  vec4 scol = texture2D(sTexture, coord);\n";
 //            "  float warp = (1.0 - (distance(coord, vec2(0.5, 0.5)) / sqrt(0.5))) * warpAmount;\n" +
-            "  float warp = (1.0 - coord.x) * warpAmount;\n" +
+//            "  float warp = (1.0 - coord.x) * warpAmount;\n" +
+    private static final String FRAGMENT_SHADER2B =
             "  float lfDiff = cframeTime - lframeTime;\n" +
             "  float nfDiff = nframeTime - cframeTime;\n" +
             "  float mod = 0.0;\n"+//(cframeTime - warp) / lfDiff;\n" +
@@ -106,6 +108,13 @@ public class TextureRender {
             "  if (warp > cframeTime && warp < nframeTime) { mod = (nframeTime - warp) / nfDiff; }\n" +
             "  if (mod > 0.0) { gl_FragColor = mod * scol; }\n" +
             "}\n";
+
+    private static final String[] WARP_FUNCTION = new String[]{
+            "  float warp = coord.x * warpAmount;\n",
+            "  float warp = coord.y * warpAmount;\n",
+            "  float warp = distance(coord, vec2(0.5, 0.5)) / sqrt(0.5) * warpAmount;\n",
+            "  float warp = distance(coord, vec2(0.5, 0.5)) / sqrt(0.5) * warpAmount;\n",
+    };
 
 
     private float[] mMVPMatrix = new float[16];
@@ -253,7 +262,11 @@ public class TextureRender {
             throw new RuntimeException("Could not get attrib location for uSTMatrix");
         }
 
-        mProgram2 = createProgram(VERTEX_SHADER, FRAGMENT_SHADER2);
+        String FRAG_SRC = FRAGMENT_SHADER2A + WARP_FUNCTION[WarpService.instance.warper.args.warpType];
+        if (WarpService.instance.warper.args.invertWarp) FRAG_SRC += "  warp = warpAmount - warp;\n";
+        FRAG_SRC += FRAGMENT_SHADER2B;
+
+        mProgram2 = createProgram(VERTEX_SHADER, FRAG_SRC);
         if (mProgram2 == 0) {
             throw new RuntimeException("failed creating program");
         }

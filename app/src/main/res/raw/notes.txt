@@ -42,7 +42,7 @@ optimizations:
 
  Left to be done (ordered by estimated difficulty):
 
- - Enable some different warp modes and "Invert Warp"
+ x Enable some different warp modes and "Invert Warp"
  - Handle video orientation by rotating the UV coords in TextureRender
  - Warp halting
  - Time stretching (should not be hard at all)
