@@ -36,3 +36,18 @@ optimizations:
     -: change from using ns or us to using ms. then could switch from highp to mediump precision.
     - reduce if-statements?
  - seeking and batchsize are the real limiters, though.
+
+
+
+
+ Left to be done (ordered by estimated difficulty):
+
+ - Enable some different warp modes and "Invert Warp"
+ - Handle video orientation by rotating the UV coords in TextureRender
+ - Warp halting
+ - Time stretching (should not be hard at all)
+ - Remove evil black bar on eldest frame
+ - Black padding frames on beginning and end
+        ~ not hard but time consuming ~
+ - Test on AWS (deposit some $ in acct. first)
+ - Add VTW icon and ensure theme is consistent or at least usable across devices
