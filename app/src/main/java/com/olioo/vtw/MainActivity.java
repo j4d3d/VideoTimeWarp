@@ -194,6 +194,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 startWarpService();
+                decPath = null; // gui state based on this
                 lytWarp.setVisibility(View.GONE);
                 lytWarping.setVisibility(View.VISIBLE);
             }
@@ -206,6 +207,15 @@ public class MainActivity extends AppCompatActivity {
                 lytWarping.setVisibility(View.GONE);
             }
         });
+
+        // which lyt to show?
+        if (warpService != null) {
+            lytWarping.setVisibility(View.VISIBLE);
+            lytMain.setVisibility(View.GONE);
+        } else if (decPath != null) {
+            lytWarp.setVisibility(View.VISIBLE);
+            lytMain.setVisibility(View.GONE);
+        } // lytMain visible by default
     }
 
 

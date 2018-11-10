@@ -47,7 +47,9 @@ optimizations:
  x Warp halting
  - Time stretching (should not be hard at all)
  - Remove evil black bar on eldest frame
+ - Can we release muxer in a finally block to give moov atoms to video halted by a crash?
  - Black padding frames on beginning and end
+ - Preview image if MainActivity != null
         ~ not hard but time consuming ~
  - Test on AWS (deposit some $ in acct. first)
  - Add VTW icon and ensure theme is consistent or at least usable across devices
