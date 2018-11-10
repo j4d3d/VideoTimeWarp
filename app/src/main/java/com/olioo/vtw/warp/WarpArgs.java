@@ -111,8 +111,8 @@ public class WarpArgs {
             decHeight = swap;
         }
 
-        outWidth = (int)(scale * decWidth);
-        outHeight = (int)(scale * decHeight);
+        outWidth = (int)(scale * decWidth); outWidth -= outWidth % 16;
+        outHeight = (int)(scale * decHeight); outHeight -= outHeight % 16;
 
     }
 

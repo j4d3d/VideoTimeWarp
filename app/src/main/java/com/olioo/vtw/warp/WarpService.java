@@ -58,7 +58,8 @@ public class WarpService extends Service {
         args.encodePath = Environment.getExternalStorageDirectory()+"/"+filename;
         args.warpType = intent.getIntExtra("warpTypeExtra", 0);
         args.invertWarp = intent.getBooleanExtra("invertExtra", false);
-        args.amount = intent.getFloatExtra("secondsExtra", 1f);
+        args.amount = intent.getFloatExtra("secondsExtra", 1f); // 1 microsecond lol
+        args.scale = intent.getFloatExtra("scaleExtra", 1f);
 
         Intent notificationIntent = new Intent(this, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(this,
@@ -111,8 +112,8 @@ public class WarpService extends Service {
 
                 // warp args that must be profiled
                 args.profileDecodee(args.decodePath);
-                args.outWidth = args.decWidth - args.decWidth % 16;
-                args.outHeight = args.decHeight - args.decHeight % 16;
+//                args.outWidth = args.decWidth - args.decWidth % 16;
+//                args.outHeight = args.decHeight - args.decHeight % 16;
                 args.bitrate = 1600000;
                 args.frameRate = 30;
                 Log.d("WarpArgs", args.print());

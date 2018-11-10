@@ -104,8 +104,8 @@ public class TextureRender {
             "  float lfDiff = cframeTime - lframeTime;\n" +
             "  float nfDiff = nframeTime - cframeTime;\n" +
             "  float mod = 0.0;\n"+//(cframeTime - warp) / lfDiff;\n" +
-            "  if (warp > lframeTime && warp < cframeTime) { mod = (warp - lframeTime) / lfDiff; }\n" +
-            "  if (warp > cframeTime && warp < nframeTime) { mod = (nframeTime - warp) / nfDiff; }\n" +
+            "  if (warp >= lframeTime && warp < cframeTime) { mod = (warp - lframeTime) / lfDiff; }\n" +
+            "  if (warp >= cframeTime && warp <= nframeTime) { mod = (nframeTime - warp) / nfDiff; }\n" +
             "  if (mod > 0.0) { gl_FragColor = mod * scol; }\n" +
             "}\n";
 

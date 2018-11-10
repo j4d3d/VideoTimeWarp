@@ -126,8 +126,11 @@ public class MainActivity extends AppCompatActivity {
     public jEditText boxFileName;
     public Spinner spinWarpType;
     public Switch swtInvert;
-    public SeekBar seekSeconds;
     public jEditText boxSeconds;
+    public SeekBar seekSeconds;
+    public jEditText boxScale;
+    public SeekBar seekScale;
+
     public ProgressBar progWarp;
 
     public Button btnStart;
@@ -139,12 +142,13 @@ public class MainActivity extends AppCompatActivity {
         boxFileName = findViewById(R.id.boxFileName);
         spinWarpType = findViewById(R.id.spinWarpType);
         swtInvert = findViewById(R.id.swtInvert);
-        seekSeconds = findViewById(R.id.seekSeconds);
         boxSeconds = findViewById(R.id.boxSeconds);
+        seekSeconds = findViewById(R.id.seekSeconds);
+        boxScale = findViewById(R.id.boxScale);
+        seekScale = findViewById(R.id.seekScale);
         btnStart = findViewById(R.id.btnStart);
 
         progWarp = findViewById(R.id.progWarp);
-        progWarp.setProgress(5000);
 
         btnWarp.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -168,6 +172,13 @@ public class MainActivity extends AppCompatActivity {
         // seconds slider
         seekSeconds.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) { boxSeconds.setText(""+(progress/1000f)); }
+            @Override public void onStartTrackingTouch(SeekBar seekBar) { }
+            @Override public void onStopTrackingTouch(SeekBar seekBar) { }
+        });
+
+        // scale slider
+        seekScale.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) { boxScale.setText(""+(progress/10000f)); }
             @Override public void onStartTrackingTouch(SeekBar seekBar) { }
             @Override public void onStopTrackingTouch(SeekBar seekBar) { }
         });
@@ -244,6 +255,7 @@ public class MainActivity extends AppCompatActivity {
         serviceIntent.putExtra("warpTypeExtra", spinWarpType.getSelectedItemPosition());
         serviceIntent.putExtra("invertExtra", swtInvert.isChecked());
         serviceIntent.putExtra("secondsExtra", Float.parseFloat(boxSeconds.getText()+"")*1000000);
+        serviceIntent.putExtra("scaleExtra", Float.parseFloat(boxScale.getText()+""));
 
         ContextCompat.startForegroundService(this, serviceIntent);
     }
