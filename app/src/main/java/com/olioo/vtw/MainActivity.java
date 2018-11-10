@@ -85,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
                         stopWarpService();
                         videoView.setVideoURI(Uri.parse(msg.obj+""));
                         videoView.start();
+                        lytMain.setVisibility(View.VISIBLE);
                         break;
                     //case HNDL_WATCH_VID: break;
                     case HNDL_HIDE_KEYBOARD:
@@ -121,8 +122,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public ConstraintLayout lytMain, lytWarp;
+    public ConstraintLayout lytMain, lytWarp, lytWarping;
+
     public Button btnWarp;
+
     public jEditText boxFileName;
     public Spinner spinWarpType;
     public Switch swtInvert;
@@ -131,6 +134,7 @@ public class MainActivity extends AppCompatActivity {
     public jEditText boxScale;
     public SeekBar seekScale;
 
+    public Button btnHalt;
     public ProgressBar progWarp;
 
     public Button btnStart;
@@ -147,6 +151,9 @@ public class MainActivity extends AppCompatActivity {
         boxScale = findViewById(R.id.boxScale);
         seekScale = findViewById(R.id.seekScale);
         btnStart = findViewById(R.id.btnStart);
+
+        lytWarping = findViewById(R.id.lytWarping);
+        btnHalt = findViewById(R.id.btnHalt);
 
         progWarp = findViewById(R.id.progWarp);
 
@@ -188,7 +195,15 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 startWarpService();
                 lytWarp.setVisibility(View.GONE);
-                // show lytWarping
+                lytWarping.setVisibility(View.VISIBLE);
+            }
+        });
+
+        btnHalt.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                WarpService.instance.warper.halt = true;
+                lytWarping.setVisibility(View.GONE);
             }
         });
     }

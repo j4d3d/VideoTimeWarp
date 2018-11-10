@@ -135,7 +135,7 @@ public class Warper extends AndroidTestCase {
                     if (Build.VERSION.SDK_INT >= 21) inputBuf = decoder.getInputBuffer(inputBufIndex);
 
                     int chunkSize = extractor.readSampleData(inputBuf, 0);
-                    if (chunkSize < 0) {
+                    if (chunkSize < 0 || halt) {
                         if (letDecoderEnd) {
                             // End of stream -- send empty frame with EOS flag set.
                             decoder.queueInputBuffer(inputBufIndex, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM);

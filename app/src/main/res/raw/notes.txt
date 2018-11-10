@@ -44,7 +44,7 @@ optimizations:
 
  x Enable some different warp modes and "Invert Warp"
  - Handle video orientation by rotating the UV coords in TextureRender
- - Warp halting
+ x Warp halting
  - Time stretching (should not be hard at all)
  - Remove evil black bar on eldest frame
  - Black padding frames on beginning and end
