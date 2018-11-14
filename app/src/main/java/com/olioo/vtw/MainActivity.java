@@ -52,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
     public static Handler handle;
     public static WarpService warpService;
 
-    String decPath = null;
+    static String decPath = null;
 
     VideoView videoView;
 
@@ -133,6 +133,9 @@ public class MainActivity extends AppCompatActivity {
     public SeekBar seekSeconds;
     public jEditText boxScale;
     public SeekBar seekScale;
+    public jEditText boxBitrate;
+    public SeekBar seekBitrate;
+
 
     public Button btnHalt;
     public ProgressBar progWarp;
@@ -150,6 +153,8 @@ public class MainActivity extends AppCompatActivity {
         seekSeconds = findViewById(R.id.seekSeconds);
         boxScale = findViewById(R.id.boxScale);
         seekScale = findViewById(R.id.seekScale);
+        boxBitrate = findViewById(R.id.boxBitrate);
+        seekBitrate = findViewById(R.id.seekBitrate);
         btnStart = findViewById(R.id.btnStart);
 
         lytWarping = findViewById(R.id.lytWarping);
@@ -190,6 +195,13 @@ public class MainActivity extends AppCompatActivity {
             @Override public void onStopTrackingTouch(SeekBar seekBar) { }
         });
 
+        // bitrate slider
+        seekBitrate.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) { boxBitrate.setText(""+(int)(progress/10000f*4200000)); }
+            @Override public void onStartTrackingTouch(SeekBar seekBar) { }
+            @Override public void onStopTrackingTouch(SeekBar seekBar) { }
+        });
+
         btnStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -209,7 +221,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // which lyt to show?
-        if (warpService != null) {
+        if (WarpService.instance != null) {
             lytWarping.setVisibility(View.VISIBLE);
             lytMain.setVisibility(View.GONE);
         } else if (decPath != null) {
@@ -255,7 +267,7 @@ public class MainActivity extends AppCompatActivity {
                     };
 
                     //ask user to cancel current warping video if any, or just start
-                    if (warpService != null && warpService.started && !warpService.finished)
+                    if (WarpService.instance != null && WarpService.instance.started && !WarpService.instance.finished)
                         Helper.runOnYes("A video is currently being warped, cancel it?", this, runnable);
                     else runnable.run();
 
@@ -281,6 +293,7 @@ public class MainActivity extends AppCompatActivity {
         serviceIntent.putExtra("invertExtra", swtInvert.isChecked());
         serviceIntent.putExtra("secondsExtra", Float.parseFloat(boxSeconds.getText()+"")*1000000);
         serviceIntent.putExtra("scaleExtra", Float.parseFloat(boxScale.getText()+""));
+        serviceIntent.putExtra("bitrateExtra", Integer.parseInt(boxBitrate.getText()+""));
 
         ContextCompat.startForegroundService(this, serviceIntent);
     }

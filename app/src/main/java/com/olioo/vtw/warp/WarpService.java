@@ -60,6 +60,7 @@ public class WarpService extends Service {
         args.invertWarp = intent.getBooleanExtra("invertExtra", false);
         args.amount = intent.getFloatExtra("secondsExtra", 1f); // 1 microsecond lol
         args.scale = intent.getFloatExtra("scaleExtra", 1f);
+        args.bitrate = intent.getIntExtra("bitrateExtra", 1);
 
         Intent notificationIntent = new Intent(this, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(this,
@@ -114,7 +115,7 @@ public class WarpService extends Service {
                 args.profileDecodee(args.decodePath);
 //                args.outWidth = args.decWidth - args.decWidth % 16;
 //                args.outHeight = args.decHeight - args.decHeight % 16;
-                args.bitrate = 1600000;
+//                args.bitrate = 1600000;
                 args.frameRate = 30;
                 Log.d("WarpArgs", args.print());
 
