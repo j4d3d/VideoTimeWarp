@@ -21,7 +21,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Layout;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -37,6 +40,7 @@ import com.olioo.vtw.util.Helper;
 import com.olioo.vtw.warp.WarpArgs;
 import com.olioo.vtw.warp.WarpService;
 
+import java.io.File;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -58,21 +62,16 @@ public class MainActivity extends AppCompatActivity {
     static String decPath = null;
     static String outPath = null;
 
-    VideoView videoView;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
-        View decorView = getWindow().getDecorView();
-        // Hide the status bar.
-        int uiOptions = View.SYSTEM_UI_FLAG_FULLSCREEN;
-        decorView.setSystemUiVisibility(uiOptions);
-        // Remember that you should never show the action bar if the
-        // status bar is hidden, so hide that too if necessary.
-        ActionBar actionBar = getActionBar();
-        if (actionBar != null) actionBar.hide();
+        //hide title and notification bars
+//        this.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+        setContentView(R.layout.activity_main);
     }
 
     @Override
@@ -115,7 +114,6 @@ public class MainActivity extends AppCompatActivity {
         };
 
 
-        videoView = findViewById(R.id.videoView);
         videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener(){
             @Override
             public void onCompletion(MediaPlayer mediaPlayer) {
@@ -126,8 +124,16 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d(TAG, "Instance: "+WarpService.instance);
         if (outPath != null) {
-            videoView.setVideoURI(Uri.parse(outPath));
-            videoView.start();
+            boolean notOverwriting = true;
+            if (WarpService.instance != null) {
+                File a = new File(WarpService.instance.args.encodePath);
+                File b = new File(outPath);
+                if (a.getAbsolutePath().equals(b.getAbsolutePath())) notOverwriting = false;
+            }
+            if (notOverwriting) {
+                videoView.setVideoURI(Uri.parse(outPath));
+                videoView.start();
+            }
         }
     }
 
@@ -139,11 +145,13 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
+    public ConstraintLayout lytGUI;
+    public VideoView videoView;
 
-    public ConstraintLayout lytMain, lytWarp;
-
+    public ConstraintLayout lytMain;
     public Button btnWarp;
 
+    public ConstraintLayout lytWarp;
     public jEditText boxFileName;
     public Spinner spinWarpType;
     public Switch swtInvert;
@@ -153,7 +161,6 @@ public class MainActivity extends AppCompatActivity {
     public SeekBar seekScale;
     public jEditText boxBitrate;
     public SeekBar seekBitrate;
-
 
     public ConstraintLayout lytWarping;
     public TextView txtFilename;
@@ -168,6 +175,9 @@ public class MainActivity extends AppCompatActivity {
 
     public Button btnStart;
     public void setupGUI() {
+        lytGUI = findViewById(R.id.lytGUI);
+        videoView = findViewById(R.id.videoView);
+
         lytMain = findViewById(R.id.lytMain);
         btnWarp = findViewById(R.id.btnWarp);
 
@@ -251,6 +261,16 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 WarpService.instance.warper.halt = true;
                 lytWarping.setVisibility(View.GONE);
+            }
+        });
+
+        videoView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                if (lytGUI.getVisibility() == View.VISIBLE)
+                    lytGUI.setVisibility(View.GONE);
+                else lytGUI.setVisibility(View.VISIBLE);
+                return false;
             }
         });
 

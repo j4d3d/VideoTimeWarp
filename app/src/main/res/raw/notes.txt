@@ -55,3 +55,4 @@ optimizations:
         ~ not hard but time consuming ~
  - Test on AWS (deposit some $ in acct. first)
  - Add VTW icon and ensure theme is consistent or at least usable across devices
+ - Analyze "awaitNewFrame" times, especially with other processes running to see if adequate time is given. why not give it a 10 second buffer?

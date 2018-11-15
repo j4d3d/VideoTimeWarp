@@ -137,7 +137,7 @@ public class TextureRender {
     public String getFragShader(WarpArgs args) {
         String o = FRAGMENT_SHADER2A;
         // embed aspect ratio variable if required
-        float aRatio = args.decWidth / args.decHeight;
+        float aRatio = (float)args.decWidth / args.decHeight;
         if (args.warpType >= 2) o += "  float aRatio = "+String.format("%.4f", (float)args.decWidth / args.decHeight)+";\n";
         switch (args.warpType) {
             case 4: o += "  float dist = "+String.format("%.4f", (float)Math.sqrt(aRatio*aRatio + 1/aRatio/aRatio))+";\n"; break;

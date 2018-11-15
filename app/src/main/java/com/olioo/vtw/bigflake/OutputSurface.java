@@ -211,7 +211,7 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
      * data is available.
      */
     public void awaitNewImage() {
-        final int TIMEOUT_MS = 500;
+        final int TIMEOUT_MS = 1000; //formerly 500, seems to crash on screen rotation...
         synchronized (mFrameSyncObject) {
             while (!mFrameAvailable) {
                 try {
