@@ -28,6 +28,7 @@ import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.util.Log;
 
+import com.olioo.vtw.warp.WarpArgs;
 import com.olioo.vtw.warp.WarpService;
 import com.olioo.vtw.warp.Warper;
 
@@ -98,23 +99,56 @@ public class TextureRender {
             "  vec2 coord = vTextureCoord;\n" +
             "  coord.y = (1.0 - coord.y);\n" +
             "  vec4 scol = texture2D(sTexture, coord);\n";
-//            "  float warp = (1.0 - (distance(coord, vec2(0.5, 0.5)) / sqrt(0.5))) * warpAmount;\n" +
-//            "  float warp = (1.0 - coord.x) * warpAmount;\n" +
     private static final String FRAGMENT_SHADER2B =
             "  float lfDiff = cframeTime - lframeTime;\n" +
             "  float nfDiff = nframeTime - cframeTime;\n" +
-            "  float mod = 0.0;\n"+//(cframeTime - warp) / lfDiff;\n" +
+            "  float mod = 0.0;\n"+
             "  if (warp >= lframeTime && warp < cframeTime) { mod = (warp - lframeTime) / lfDiff; }\n" +
             "  if (warp >= cframeTime && warp <= nframeTime) { mod = (nframeTime - warp) / nfDiff; }\n" +
             "  if (mod > 0.0) { gl_FragColor = mod * scol; }\n" +
-            "}\n";
+            "}";
 
     private static final String[] WARP_FUNCTION = new String[]{
             "  float warp = coord.x * warpAmount;\n",
+
             "  float warp = coord.y * warpAmount;\n",
-            "  float warp = distance(coord, vec2(0.5, 0.5)) / sqrt(0.5) * warpAmount;\n",
-            "  float warp = distance(coord, vec2(0.5, 0.5)) / sqrt(0.5) * warpAmount;\n",
+
+            "  float warp = (coord.x + coord.y) / 2.0 * warpAmount;\n",
+
+            "  float warp = ((1.0 - coord.x) + coord.y) / 2.0 * warpAmount;\n",
+
+            "  vec2 acoord = vec2(coord.x * aRatio, coord.y / aRatio);\n" +
+            "  float warp = distance(acoord, vec2(0.5 * aRatio, 0.5 / aRatio)) / dist * warpAmount;\n",
+
+            "  vec2 acoord = vec2(coord.x * aRatio, coord.y / aRatio);\n" +
+            "  float warp = distance(acoord, vec2(0.5 * aRatio, 0.0)) / dist * warpAmount;\n",
+
+            "  vec2 acoord = vec2(coord.x * aRatio, coord.y / aRatio);\n" +
+            "  float warp = distance(acoord, vec2(0.5 * aRatio, 0.0)) / dist * warpAmount;\n",
     };
+    /** warpTypes:
+     0:  Vertical
+     1:  Horizontal
+     2:  Diagonal 1
+     3:  Diagonal 2
+     4:  Radial
+     5:  HalfDome-Top
+     6:  HalfDome-Bottom  */
+    public String getFragShader(WarpArgs args) {
+        String o = FRAGMENT_SHADER2A;
+        // embed aspect ratio variable if required
+        float aRatio = args.decWidth / args.decHeight;
+        if (args.warpType >= 2) o += "  float aRatio = "+String.format("%.4f", (float)args.decWidth / args.decHeight)+";\n";
+        switch (args.warpType) {
+            case 4: o += "  float dist = "+String.format("%.4f", (float)Math.sqrt(aRatio*aRatio + 1/aRatio/aRatio))+";\n"; break;
+            case 5: o += "  float dist = "+String.format("%.4f", (float)Math.sqrt(aRatio/2*aRatio/2 + 1/aRatio/aRatio))+";\n"; break;
+            case 6: o += "  float dist = "+String.format("%.4f", (float)Math.sqrt(aRatio/2*aRatio/2 + 1/aRatio/aRatio))+";\n"; break;
+        }
+        o += WARP_FUNCTION[WarpService.instance.warper.args.warpType];
+        if (WarpService.instance.warper.args.invertWarp) o += "  warp = warpAmount - warp;\n";
+        o += FRAGMENT_SHADER2B;
+        return o;
+    }
 
 
     private float[] mMVPMatrix = new float[16];
@@ -262,9 +296,16 @@ public class TextureRender {
             throw new RuntimeException("Could not get attrib location for uSTMatrix");
         }
 
-        String FRAG_SRC = FRAGMENT_SHADER2A + WARP_FUNCTION[WarpService.instance.warper.args.warpType];
-        if (WarpService.instance.warper.args.invertWarp) FRAG_SRC += "  warp = warpAmount - warp;\n";
-        FRAG_SRC += FRAGMENT_SHADER2B;
+        // construct frag shader
+        String FRAG_SRC = getFragShader(WarpService.instance.warper.args);
+
+        // print frag shader for debug
+//        if ("".length() == 0) {
+            String[] lines = FRAG_SRC.split("\n");
+            String o="";
+            for (int i=0; i<lines.length; i++) o += "\n"+i+":\t"+lines[i];
+            Log.d(TAG, "FRAG_SRC:"+o);
+//        }
 
         mProgram2 = createProgram(VERTEX_SHADER, FRAG_SRC);
         if (mProgram2 == 0) {

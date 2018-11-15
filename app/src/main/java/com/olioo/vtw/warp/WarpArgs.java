@@ -28,6 +28,7 @@ public class WarpArgs {
 
     //ui
     //public WarpFunction function;
+    public String filename;
     public int warpType;
     public boolean invertWarp;
     public float amount;

@@ -87,6 +87,7 @@ public class Warper extends AndroidTestCase {
             extractor.seekTo(0, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
             if (extractor.getSampleTime() != frameTimes.get(0))
                 throw new RuntimeException("Failed at seeking to beginning of video. Seeked to: "+extractor.getSampleTime());
+            WarpService.instance.anticipatedBatchFrames = frameTimes.size();
 
             // setup formats
             inputFormat = extractor.getTrackFormat(decoderTrackIndex);
@@ -222,10 +223,12 @@ public class Warper extends AndroidTestCase {
                     inputSurface.swapBuffers();
                     batchEncodeProg++;
                     if (batchEncodeProg == batchSize) {
+                        WarpService.instance.lastBatchFrame = batchFrame;
+                        WarpService.instance.lastBatchTime = System.currentTimeMillis();
                         batchFloor += batchSize;
                         encodingBatch = false;
                         // seek
-                        long time = batchFloor * 1000000L / args.frameRate;
+                        long time = 0;//batchFloor * 1000000L / args.frameRate - (long)(args.amount / args.frameRate * 2);
                         if (VERBOSE) Log.d(TAG, "Seeking to time: "+batchFloor+", at time: "+time);
                         extractor.seekTo(time, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
 //                            while (extractor.getSampleTime() < time) extractor.advance();
@@ -296,13 +299,13 @@ public class Warper extends AndroidTestCase {
 
                         float bfloorTime = Math.max((batchFloor-1), 0) * (1000000f / args.frameRate);
                         float lframeTime = frameTimes.get(Math.max(0, currentFrame-1));
-                        float nframeTime = frameTimes.get(Math.min(currentFrame+1, frameTimes.size()-1));
+                        float nframeTime = frameTimes.get(Math.min(currentFrame+1, frameTimes.size()-2));
                         float cframeTime = frameTimes.get(currentFrame);
 
-                        if (cframeTime >= bfloorTime)
+//                        if (nframeTime >= bfloorTime)
                             for (int i=0; i<batchSize; i++) {
                                 float bframeTime = (batchFloor + i - 1) * 1000000f / args.frameRate;
-                                if (cframeTime < bframeTime) continue;
+//                                if (nframeTime <= bframeTime) continue;
                                 boolean clear = lframeTime < bframeTime && cframeTime >= bframeTime;
                                 if (clear)
                                     if (VERBOSE) Log.d(TAG, "Clearing bframe: "+(batchFloor+i)+" @ bftime: "+bframeTime);

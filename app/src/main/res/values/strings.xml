@@ -4,8 +4,11 @@
     <string-array name="warp_modes">
         <item>Vertical</item>
         <item>Horizontal</item>
+        <item>Diagonal 1</item>
+        <item>Diagonal 2</item>
         <item>Radial</item>
-        <item>Random 0-1</item>
+        <item>HalfDome-Top</item>
+        <item>HalfDome-Bottom</item>
         <!--<item>Image/Video (coming soon)</item>-->
         <!--<item>Custom Function (coming soon)</item>-->
     </string-array>

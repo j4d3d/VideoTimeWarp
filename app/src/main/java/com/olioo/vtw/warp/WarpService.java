@@ -42,6 +42,10 @@ public class WarpService extends Service {
     public Timer heartbeat;
     public long birth = -1;
 
+    public long lastBatchTime = 0;
+    public int anticipatedBatchFrames = 0;
+    public int lastBatchFrame = 0;
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -54,8 +58,8 @@ public class WarpService extends Service {
         args = new WarpArgs();
 
         args.decodePath = intent.getStringExtra("decodePathExtra");
-        String filename = intent.getStringExtra("filenameExtra");
-        args.encodePath = Environment.getExternalStorageDirectory()+"/"+filename;
+        args.filename = intent.getStringExtra("filenameExtra");
+        args.encodePath = Environment.getExternalStorageDirectory()+"/"+args.filename;
         args.warpType = intent.getIntExtra("warpTypeExtra", 0);
         args.invertWarp = intent.getBooleanExtra("invertExtra", false);
         args.amount = intent.getFloatExtra("secondsExtra", 1f); // 1 microsecond lol
@@ -68,7 +72,7 @@ public class WarpService extends Service {
 
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("Video Time Warp")
-                .setContentText("Warping video: \""+filename+"\".")
+                .setContentText("Warping video: \""+args.filename+"\".")
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentIntent(pendingIntent)
                 .build();

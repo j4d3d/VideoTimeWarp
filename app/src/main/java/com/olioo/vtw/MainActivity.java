@@ -1,6 +1,7 @@
 package com.olioo.vtw;
 
 import android.Manifest;
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.ComponentName;
@@ -29,6 +30,7 @@ import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.VideoView;
 import com.olioo.vtw.gui.jEditText;
 import com.olioo.vtw.util.Helper;
@@ -52,7 +54,9 @@ public class MainActivity extends AppCompatActivity {
     public static Handler handle;
     public static WarpService warpService;
 
+    // these vars determine state, and must be set to null when non applicable
     static String decPath = null;
+    static String outPath = null;
 
     VideoView videoView;
 
@@ -60,6 +64,15 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        View decorView = getWindow().getDecorView();
+        // Hide the status bar.
+        int uiOptions = View.SYSTEM_UI_FLAG_FULLSCREEN;
+        decorView.setSystemUiVisibility(uiOptions);
+        // Remember that you should never show the action bar if the
+        // status bar is hidden, so hide that too if necessary.
+        ActionBar actionBar = getActionBar();
+        if (actionBar != null) actionBar.hide();
     }
 
     @Override
@@ -83,14 +96,17 @@ public class MainActivity extends AppCompatActivity {
                     case HNDL_WARP_DONE:
                         Log.d(TAG, "Warp done!");
                         stopWarpService();
-                        videoView.setVideoURI(Uri.parse(msg.obj+""));
+                        outPath = msg.obj+"";
+                        videoView.setVideoURI(Uri.parse(outPath));
                         videoView.start();
                         lytMain.setVisibility(View.VISIBLE);
+                        lytWarping.setVisibility(View.GONE);
+                        progWarp.setVisibility(View.GONE);
                         break;
                     //case HNDL_WATCH_VID: break;
                     case HNDL_HIDE_KEYBOARD:
                         InputMethodManager imm = (InputMethodManager) getBaseContext().getSystemService(Activity.INPUT_METHOD_SERVICE);
-                        try { imm.hideSoftInputFromWindow(((jEditText) msg.obj).getWindowToken(), 0);
+                        try { imm.hideSoftInputFromWindow(((View) msg.obj).getWindowToken(), 0);
                         } catch (NullPointerException e) { e.printStackTrace(); }
                         break;
                     default: Log.d("unhandled message", msg.what+"\t"+msg.obj); break;
@@ -109,8 +125,10 @@ public class MainActivity extends AppCompatActivity {
         });
 
         Log.d(TAG, "Instance: "+WarpService.instance);
-//        videoView.setVideoURI(Uri.parse(Environment.getExternalStorageDirectory()+"/test.mp4"));
-//        videoView.start();
+        if (outPath != null) {
+            videoView.setVideoURI(Uri.parse(outPath));
+            videoView.start();
+        }
     }
 
     @Override
@@ -122,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public ConstraintLayout lytMain, lytWarp, lytWarping;
+    public ConstraintLayout lytMain, lytWarp;
 
     public Button btnWarp;
 
@@ -136,6 +154,14 @@ public class MainActivity extends AppCompatActivity {
     public jEditText boxBitrate;
     public SeekBar seekBitrate;
 
+
+    public ConstraintLayout lytWarping;
+    public TextView txtFilename;
+    public TextView txtWarptype;
+    public TextView txtSeconds;
+    public TextView txtScale;
+    public TextView txtBitrate;
+    public TextView txtTimeleft;
 
     public Button btnHalt;
     public ProgressBar progWarp;
@@ -158,6 +184,12 @@ public class MainActivity extends AppCompatActivity {
         btnStart = findViewById(R.id.btnStart);
 
         lytWarping = findViewById(R.id.lytWarping);
+        txtFilename = findViewById(R.id.txtFilename);
+        txtWarptype = findViewById(R.id.txtWarptype);
+        txtSeconds = findViewById(R.id.txtSeconds);
+        txtScale = findViewById(R.id.txtScale);
+        txtBitrate = findViewById(R.id.txtBitrate);
+        txtTimeleft = findViewById(R.id.txtTimeLeft);
         btnHalt = findViewById(R.id.btnHalt);
 
         progWarp = findViewById(R.id.progWarp);
@@ -207,8 +239,10 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 startWarpService();
                 decPath = null; // gui state based on this
+                handle.obtainMessage(HNDL_HIDE_KEYBOARD, lytWarp).sendToTarget();
                 lytWarp.setVisibility(View.GONE);
                 lytWarping.setVisibility(View.VISIBLE);
+                progWarp.setVisibility(View.VISIBLE);
             }
         });
 
@@ -221,15 +255,47 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // which lyt to show?
-        if (WarpService.instance != null) {
-            lytWarping.setVisibility(View.VISIBLE);
-            lytMain.setVisibility(View.GONE);
-        } else if (decPath != null) {
-            lytWarp.setVisibility(View.VISIBLE);
-            lytMain.setVisibility(View.GONE);
-        } // lytMain visible by default
+        guiByState();
     }
 
+    void guiByState() {
+        if (WarpService.instance != null) {
+            lytMain.setVisibility(View.GONE);
+            lytWarp.setVisibility(View.GONE);
+            lytWarping.setVisibility(View.VISIBLE);
+            updateLytWarping();
+        } else if (decPath != null) {
+            lytMain.setVisibility(View.GONE);
+            lytWarp.setVisibility(View.VISIBLE);
+            lytWarping.setVisibility(View.GONE);
+        } else {
+            lytMain.setVisibility(View.VISIBLE);
+            lytWarp.setVisibility(View.GONE);
+            lytWarping.setVisibility(View.GONE);
+        }
+    }
+
+    void updateLytWarping() {
+        // update warping GUI
+        txtFilename.setText(WarpService.instance.args.filename);
+        txtWarptype.setText(getResources().getStringArray(R.array.warp_modes)[WarpService.instance.args.warpType]);
+        txtSeconds.setText(String.format("%.4f", (WarpService.instance.args.amount/1000000f)));
+        txtScale.setText(String.format("%.4f", WarpService.instance.args.scale));
+        txtBitrate.setText(WarpService.instance.args.bitrate+"");
+
+        long elapsed = WarpService.instance.lastBatchTime - WarpService.instance.birth;
+        float prog = (float)WarpService.instance.lastBatchFrame / WarpService.instance.anticipatedBatchFrames;
+        if (prog == 0) txtTimeleft.setText("Calculating...");
+        else {
+            float remaining = (elapsed / prog) - (System.currentTimeMillis() - WarpService.instance.birth);
+            int hours = (int) Math.floor(remaining / 3600000);
+            remaining -= hours * 3600000;
+            int min = (int) Math.floor(remaining / 60000);
+            remaining -= min * 60000;
+            int sec = (int) Math.floor(remaining / 1000);
+            txtTimeleft.setText(String.format("%02d", hours) + ":" + String.format("%02d", min) + ":" + String.format("%02d", sec));
+        }
+    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -242,7 +308,7 @@ public class MainActivity extends AppCompatActivity {
                     Runnable runnable = new Runnable() {
                         @Override
                         public void run() {
-                            //halt WarpService.instance.warper if exists, catch nullpointer just in case
+                            // halt WarpService.instance.warper if exists, catch nullpointer just in case
                             try {
                                 if (WarpService.instance != null && WarpService.instance.started && !WarpService.instance.finished)
                                     WarpService.instance.warper.halt = true;
@@ -296,6 +362,15 @@ public class MainActivity extends AppCompatActivity {
         serviceIntent.putExtra("bitrateExtra", Integer.parseInt(boxBitrate.getText()+""));
 
         ContextCompat.startForegroundService(this, serviceIntent);
+
+//        updateLytWarping(); // service isn't necessarily started yet, so we need to do this manually
+        // update warping GUI
+        txtFilename.setText(boxFileName.getText()+".mp4");
+        txtWarptype.setText(getResources().getStringArray(R.array.warp_modes)[spinWarpType.getSelectedItemPosition()]);
+        txtSeconds.setText(boxSeconds.getText());
+        txtScale.setText(boxScale.getText());
+        txtBitrate.setText(boxBitrate.getText());
+        txtTimeleft.setText("Who knows?");
     }
 
     void stopWarpService() {
