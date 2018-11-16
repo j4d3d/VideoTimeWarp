@@ -42,15 +42,19 @@
                 android:id="@+id/btnWarp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:layout_marginEnd="8dp"
-                android:layout_marginStart="8dp"
-                android:layout_marginTop="8dp"
                 android:text="WARP"
+                app:layout_constraintBottom_toTopOf="@+id/btnWatch"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent" />
+
+            <Button
+                android:id="@+id/btnWatch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="WATCH"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintStart_toStartOf="parent" />
         </android.support.constraint.ConstraintLayout>
 
         <android.support.constraint.ConstraintLayout
@@ -322,6 +326,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:background="@android:color/holo_blue_dark"
+                        android:gravity="center"
                         android:orientation="vertical"
                         android:padding="4dp">
 
@@ -357,6 +362,19 @@
                                 android:text="Name"
                                 android:textAlignment="center" />
                         </RelativeLayout>
+
+                        <TextView
+                            android:id="@+id/lblWarpArgs"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentStart="true"
+                            android:layout_margin="4dp"
+                            android:layout_weight="1"
+                            android:background="@color/holoDarker"
+                            android:padding="4dp"
+                            android:text="Warp Settings"
+                            android:textAlignment="center"
+                            android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
                         <RelativeLayout
                             android:layout_width="match_parent"
@@ -467,6 +485,19 @@
 
                         </RelativeLayout>
 
+                        <TextView
+                            android:id="@+id/lblQuality"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentStart="true"
+                            android:layout_margin="4dp"
+                            android:layout_weight="1"
+                            android:background="@color/holoDarker"
+                            android:padding="4dp"
+                            android:text="Video Quality"
+                            android:textAlignment="center"
+                            android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+
                         <RelativeLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -479,7 +510,7 @@
                             tools:layout_editor_absoluteY="8dp">
 
                             <TextView
-                                android:id="@+id/textView4"
+                                android:id="@+id/lblQuality"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_alignParentStart="true"
@@ -492,7 +523,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="3dp"
-                                android:layout_toEndOf="@+id/textView4"
+                                android:layout_toEndOf="@+id/lblQuality"
                                 android:layout_toStartOf="@+id/boxScale"
                                 android:layout_weight="1"
                                 android:max="10000"

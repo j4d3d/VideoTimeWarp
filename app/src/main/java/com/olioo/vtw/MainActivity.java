@@ -115,7 +115,6 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
-
         videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener(){
             @Override
             public void onCompletion(MediaPlayer mediaPlayer) {
@@ -152,6 +151,7 @@ public class MainActivity extends AppCompatActivity {
 
     public ConstraintLayout lytMain;
     public Button btnWarp;
+    public Button btnWatch;
 
     public ConstraintLayout lytWarp;
     public jEditText boxFileName;
@@ -182,6 +182,7 @@ public class MainActivity extends AppCompatActivity {
 
         lytMain = findViewById(R.id.lytMain);
         btnWarp = findViewById(R.id.btnWarp);
+        btnWatch = findViewById(R.id.btnWatch);
 
         lytWarp = findViewById(R.id.lytWarp);
         boxFileName = findViewById(R.id.boxFileName);
@@ -212,6 +213,15 @@ public class MainActivity extends AppCompatActivity {
                 lytMain.setVisibility(View.GONE);
                 Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
                 startActivityForResult(intent, VSL_WARP);
+            }
+        });
+
+        btnWatch.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                lytMain.setVisibility(View.GONE);
+                Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
+                startActivityForResult(intent, VSL_WATCH);
             }
         });
 
@@ -373,13 +383,9 @@ public class MainActivity extends AppCompatActivity {
 
                     break;
                 case VSL_WATCH:
-//                    try {
-//                        DiaWatch.watchPath = Helper.getRealPathFromURI(this, targetUri);
-//                        diaWatch.show(fragmentManager);
-//                    } catch (Throwable th) {
-//                        diaWatch.dismiss();
-//                    }
-
+                    outPath = Helper.getRealPathFromURI(getBaseContext(), targetUri);
+                    videoView.setVideoURI(Uri.parse(outPath));
+                    videoView.start();
                     break;
             }
         }
