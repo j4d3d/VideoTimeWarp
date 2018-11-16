@@ -8,6 +8,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Handler;
@@ -56,11 +57,12 @@ public class MainActivity extends AppCompatActivity {
     public static final int VSL_WATCH = 1;
 
     public static Handler handle;
-    public static WarpService warpService;
 
     // these vars determine state, and must be set to null when non applicable
     static String decPath = null;
     static String outPath = null;
+    // vars necessary for gui
+    static long decBitrate = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -232,14 +234,21 @@ public class MainActivity extends AppCompatActivity {
 
         // scale slider
         seekScale.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) { boxScale.setText(""+(progress/10000f)); }
+            @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                float scale = progress/10000f;
+                boxScale.setText(""+(scale));
+                boxBitrate.setText(""+(int)(seekBitrate.getProgress()/10000f*decBitrate*1.5f*scale*scale));
+            }
             @Override public void onStartTrackingTouch(SeekBar seekBar) { }
             @Override public void onStopTrackingTouch(SeekBar seekBar) { }
         });
 
         // bitrate slider
         seekBitrate.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) { boxBitrate.setText(""+(int)(progress/10000f*4200000)); }
+            @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                float scale = Float.parseFloat(boxScale.getText()+"");
+                boxBitrate.setText(""+(int)(progress/10000f*decBitrate*1.5f*scale*scale));
+            }
             @Override public void onStartTrackingTouch(SeekBar seekBar) { }
             @Override public void onStopTrackingTouch(SeekBar seekBar) { }
         });
@@ -346,6 +355,11 @@ public class MainActivity extends AppCompatActivity {
 
                             //path of chosen video
                             decPath = Helper.getRealPathFromURI(getBaseContext(), targetUri);
+                            MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+                            mmr.setDataSource(decPath);
+                            decBitrate = (int)Long.parseLong(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE));
+                            float scale = Float.parseFloat(boxScale.getText()+"");
+                            boxBitrate.setText(""+(int)(seekBitrate.getProgress()/10000f*decBitrate*1.5f*scale*scale));
 
                             //show warp window
                             lytWarp.setVisibility(View.VISIBLE);

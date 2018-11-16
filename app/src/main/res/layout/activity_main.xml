@@ -545,7 +545,7 @@
                                 android:max="10000"
                                 android:paddingLeft="4dp"
                                 android:paddingRight="4dp"
-                                android:progress="10000" />
+                                android:progress="6666" />
 
                             <com.olioo.vtw.gui.jEditText
                                 android:id="@+id/boxBitrate"

@@ -7,8 +7,8 @@
         <item>Diagonal 1</item>
         <item>Diagonal 2</item>
         <item>Radial</item>
-        <item>HalfDome-Top</item>
-        <item>HalfDome-Bottom</item>
+        <item>Radial-Top</item>
+        <item>Radial-Bottom</item>
         <!--<item>Image/Video (coming soon)</item>-->
         <!--<item>Custom Function (coming soon)</item>-->
     </string-array>
