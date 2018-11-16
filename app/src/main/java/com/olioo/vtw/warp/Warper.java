@@ -302,11 +302,11 @@ public class Warper extends AndroidTestCase {
                         float nframeTime = frameTimes.get(Math.min(currentFrame+1, frameTimes.size()-2));
                         float cframeTime = frameTimes.get(currentFrame);
 
-//                        if (nframeTime >= bfloorTime)
+                        if (nframeTime >= bfloorTime)
                             for (int i=0; i<batchSize; i++) {
-                                float bframeTime = (batchFloor + i - 1) * 1000000f / args.frameRate;
-//                                if (nframeTime <= bframeTime) continue;
-                                boolean clear = lframeTime < bframeTime && cframeTime >= bframeTime;
+                                float bframeTime = (batchFloor + i) * 1000000f / args.frameRate;
+                                if (nframeTime <= bframeTime) continue;
+                                boolean clear = cframeTime <= bframeTime && nframeTime >= bframeTime;
                                 if (clear)
                                     if (VERBOSE) Log.d(TAG, "Clearing bframe: "+(batchFloor+i)+" @ bftime: "+bframeTime);
                                 outputSurface.drawOnBatchImage(

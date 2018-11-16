@@ -20,6 +20,7 @@ public class WarpArgs {
 
     //decodee stats
     public int decWidth, decHeight; //decoded video
+    public long decBitrate;
     public long vidDuration;
     public int numFrames;
     public float decFrameRate;
@@ -98,6 +99,8 @@ public class WarpArgs {
         //use mmr if duration is still 0
         if (true || vidDuration == 0) stopTimeUs = vidDuration =
                 Long.parseLong(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)) * 1000;
+
+        decBitrate = (int)Long.parseLong(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE));
         //height and width
         decWidth = Integer.parseInt(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH));
         decHeight = Integer.parseInt(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT));

@@ -46,12 +46,12 @@ optimizations:
  - Handle video orientation by rotating the UV coords in TextureRender
  x Warp halting
  - Time stretching (should not be hard at all)
- - Remove evil black bar on eldest frame
+ x Remove evil black bar on eldest frame
  - Can we release muxer in a finally block to give moov atoms to video halted by a crash?
  - Black padding frames on beginning and end
- - lytWarping:
+ x lytWarping:
         either: - Preview image if MainActivity != null
-                - Window displaying current warp args including ETA
+                x Window displaying current warp args including ETA
         ~ not hard but time consuming ~
  - Test on AWS (deposit some $ in acct. first)
  - Add VTW icon and ensure theme is consistent or at least usable across devices
