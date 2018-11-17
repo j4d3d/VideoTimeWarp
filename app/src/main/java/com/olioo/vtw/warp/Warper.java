@@ -249,7 +249,6 @@ public class Warper extends AndroidTestCase {
                 // the decoder.  (The output is going to a Surface, rather than a ByteBuffer,
                 // but we still get information through BufferInfo.)
 
-
                 int decoderStatus = decoder.dequeueOutputBuffer(info, TIMEOUT_USEC);
                 if (decoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
                     // no output available yet
@@ -336,7 +335,6 @@ public class Warper extends AndroidTestCase {
                         }
                     }
                 }
-
             }
         }
     }

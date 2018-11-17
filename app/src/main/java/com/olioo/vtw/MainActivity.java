@@ -11,6 +11,7 @@ import android.content.ServiceConnection;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -35,6 +36,7 @@ import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.VideoView;
 import com.olioo.vtw.gui.jEditText;
 import com.olioo.vtw.util.Helper;
@@ -52,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
     public static final int HNDL_PREVIEW_BMP = 1;
     public static final int HNDL_UPDATE_PROGRESS = 2;
     public static final int HNDL_HIDE_KEYBOARD = 3;
+    public static final int HNDL_TOAST = 4;
 
     public static final int VSL_WARP = 0;
     public static final int VSL_WATCH = 1;
@@ -88,6 +91,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         //create handle
+        final Context context = this;
         handle = new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message msg) {
@@ -110,6 +114,8 @@ public class MainActivity extends AppCompatActivity {
                         try { imm.hideSoftInputFromWindow(((View) msg.obj).getWindowToken(), 0);
                         } catch (NullPointerException e) { e.printStackTrace(); }
                         break;
+                    case HNDL_TOAST:
+                        Toast.makeText(context, (String)msg.obj, Toast.LENGTH_LONG).show();
                     default: Log.d("unhandled message", msg.what+"\t"+msg.obj); break;
                 }
             }
@@ -365,6 +371,16 @@ public class MainActivity extends AppCompatActivity {
 
                             //path of chosen video
                             decPath = Helper.getRealPathFromURI(getBaseContext(), targetUri);
+                            // ensure it does match encPath
+                            File a = new File(decPath);
+                            File b = new File(Environment.getExternalStorageDirectory()+"/"+boxFileName.getText()+".mp4");
+                            if (a.getAbsolutePath().equals(b.getAbsolutePath())) {
+                                handle.obtainMessage(HNDL_TOAST, "Can not overwrite source video, please change Filename.").sendToTarget();
+                                decPath = null;
+                                return;
+                            }
+
+
                             MediaMetadataRetriever mmr = new MediaMetadataRetriever();
                             mmr.setDataSource(decPath);
                             decBitrate = (int)Long.parseLong(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE));

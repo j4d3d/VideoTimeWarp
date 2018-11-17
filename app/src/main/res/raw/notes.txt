@@ -41,9 +41,9 @@ optimizations:
 
 
  Left to be done (ordered by estimated difficulty):
+ - Framerate slider
  - Handle video orientation by rotating the UV coords in TextureRender
  - Time stretching (should not be hard at all)
-
  - Black padding frames on beginning and end
 
         ~ not hard but time consuming ~
