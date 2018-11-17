@@ -369,7 +369,7 @@ public class MainActivity extends AppCompatActivity {
                             mmr.setDataSource(decPath);
                             decBitrate = (int)Long.parseLong(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE));
                             float scale = Float.parseFloat(boxScale.getText()+"");
-                            boxBitrate.setText(""+(int)(seekBitrate.getProgress()/10000f*decBitrate*1.5f*scale*scale));
+                            boxBitrate.setText(""+(int)(seekBitrate.getProgress()/10000f*decBitrate*1.2f*scale*scale));
 
                             //show warp window
                             lytWarp.setVisibility(View.VISIBLE);

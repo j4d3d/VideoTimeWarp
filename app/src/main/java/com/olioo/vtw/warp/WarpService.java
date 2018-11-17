@@ -105,28 +105,20 @@ public class WarpService extends Service {
             public void run() {
                 started = true;
 
-                // for testing purposes, save a small video
-//                saveRawVideo();
-//                while (!vidSaved) {
-//                    try { Thread.sleep(1000); }
-//                    catch (InterruptedException e) { e.printStackTrace(); }
-//                }
-
                 // delete old video at this path if it exists
                 new File(args.encodePath).delete();
 
-                // warp args that must be profiled
-                args.profileDecodee(args.decodePath);
-//                args.outWidth = args.decWidth - args.decWidth % 16;
-//                args.outHeight = args.decHeight - args.decHeight % 16;
-//                args.bitrate = 1600000;
-                args.frameRate = 30;
-                Log.d("WarpArgs", args.print());
+                try {
+                    // warp args that must be profiled
+                    args.profileDecodee(args.decodePath);
+                    args.frameRate = 30;
+                    Log.d("WarpArgs", args.print());
 
-                // create warper and use it
-                warper = new Warper(args);
-                warper.warp();
-                warper.release();
+                    // create warper and use it
+                    warper = new Warper(args);
+                    warper.warp();
+                } catch (Exception e) { e.printStackTrace(); }
+                finally { warper.release(); }
 
                 // mediascan the file afterwards
                 File file = new File(args.encodePath);
@@ -173,6 +165,11 @@ public class WarpService extends Service {
         });
 
         thread.start();
+
+        while (!vidSaved) {
+            try { Thread.sleep(1000); }
+            catch (InterruptedException e) { e.printStackTrace(); }
+        }
     }
 
     @Override

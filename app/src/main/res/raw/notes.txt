@@ -43,7 +43,7 @@ optimizations:
  Left to be done (ordered by estimated difficulty):
  - Handle video orientation by rotating the UV coords in TextureRender
  - Time stretching (should not be hard at all)
- - Can we release muxer in a finally block to give moov atoms to video halted by a crash?
+
  - Black padding frames on beginning and end
 
         ~ not hard but time consuming ~
@@ -58,3 +58,4 @@ optimizations:
  x lytWarping:
         either: - Preview image if MainActivity != null
                 x Window displaying current warp args including ETA
+ x Can we release muxer in a finally block to give moov atoms to video halted by a crash? (yep)
