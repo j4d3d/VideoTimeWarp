@@ -74,6 +74,8 @@ public class WarpService extends Service {
                 .setContentTitle("Video Time Warp")
                 .setContentText("Warping video: \""+args.filename+"\".")
                 .setSmallIcon(R.mipmap.ic_launcher)
+                .setLargeIcon(BitmapFactory.decodeResource(this.getResources(),
+                        R.mipmap.ic_launcher))
                 .setContentIntent(pendingIntent)
                 .build();
 
