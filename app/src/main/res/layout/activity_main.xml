@@ -300,7 +300,7 @@
             android:id="@+id/lytWarp"
             android:layout_width="320dp"
             android:layout_height="wrap_content"
-            android:visibility="gone"
+            android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -510,7 +510,7 @@
                             tools:layout_editor_absoluteY="8dp">
 
                             <TextView
-                                android:id="@+id/lblQuality"
+                                android:id="@+id/lblScale"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_alignParentStart="true"
@@ -523,7 +523,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="3dp"
-                                android:layout_toEndOf="@+id/lblQuality"
+                                android:layout_toEndOf="@+id/lblScale"
                                 android:layout_toStartOf="@+id/boxScale"
                                 android:layout_weight="1"
                                 android:max="10000"
