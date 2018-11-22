@@ -59,7 +59,6 @@ public class Warper extends AndroidTestCase {
     boolean letDecoderEnd = true; //todo: false
     boolean extractorReachedEnd = false;
 
-
     public Warper(WarpArgs args) {
         self = this;
         Warper.args = args;
@@ -117,8 +116,6 @@ public class Warper extends AndroidTestCase {
             e.printStackTrace();
         }
     }
-
-
 
     public void warp() {
         // codec and state vars

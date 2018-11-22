@@ -33,12 +33,9 @@ batchSize n performance increase over batchSize of 1:
 
 optimizations:
  - frag shader could be optimized in a number of ways, but one solid one is to:
-    -: change from using ns or us to using ms. then could switch from highp to mediump precision.
+    - change from using ns or us to using ms. then could switch from highp to mediump precision.
     - reduce if-statements?
  - seeking and batchsize are the real limiters, though.
-
-
-
 
  Left to be done (ordered by estimated difficulty):
  - Framerate slider
@@ -48,7 +45,7 @@ optimizations:
 
         ~ not hard but time consuming ~
  - Test on AWS (deposit some $ in acct. first)
- - Add VTW icon and ensure theme is consistent or at least usable across devices
+ - Ensure theme is consistent or at least usable across devices
  - Analyze "awaitNewFrame" times, especially with other processes running to see if adequate time is given. why not give it a 10 second buffer?
 
  Done!:
@@ -59,3 +56,4 @@ optimizations:
         either: - Preview image if MainActivity != null
                 x Window displaying current warp args including ETA
  x Can we release muxer in a finally block to give moov atoms to video halted by a crash? (yep)
+ x Add VTW icon
