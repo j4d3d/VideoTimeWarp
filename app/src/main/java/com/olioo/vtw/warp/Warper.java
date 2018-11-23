@@ -225,7 +225,7 @@ public class Warper extends AndroidTestCase {
                         batchFloor += batchSize;
                         encodingBatch = false;
                         // seek
-                        long time = 0;//batchFloor * 1000000L / args.frameRate - (long)(args.amount / args.frameRate * 2);
+                        long time = (long)(batchFloor * 1000000L / args.frameRate - args.amount);
                         if (VERBOSE) Log.d(TAG, "Seeking to time: "+batchFloor+", at time: "+time);
                         extractor.seekTo(time, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
 //                            while (extractor.getSampleTime() < time) extractor.advance();
@@ -293,29 +293,30 @@ public class Warper extends AndroidTestCase {
                             else drainOlderThan = -1;
                         }
 
-                        float bfloorTime = Math.max((batchFloor-1), 0) * (1000000f / args.frameRate);
+                        float bceilTime = (batchFloor + batchSize - 1) * 1000000L / args.frameRate;
                         float lframeTime = frameTimes.get(Math.max(0, currentFrame-1));
                         float nframeTime = frameTimes.get(Math.min(currentFrame+1, frameTimes.size()-2));
                         float cframeTime = frameTimes.get(currentFrame);
 
-                        if (nframeTime >= bfloorTime)
+                        if (lframeTime <= bceilTime)
                             for (int i=0; i<batchSize; i++) {
                                 float bframeTime = (batchFloor + i) * 1000000f / args.frameRate;
-                                if (nframeTime <= bframeTime) continue;
-                                boolean clear = cframeTime <= bframeTime && nframeTime >= bframeTime;
+                                float pframeTime = bframeTime - args.amount;
+                                if (lframeTime > bframeTime) continue;
+                                float clearTime = Math.max(pframeTime, frameTimes.get(0));
+                                boolean clear = cframeTime <= clearTime && nframeTime > clearTime;
                                 if (clear)
-                                    if (VERBOSE) Log.d(TAG, "Clearing bframe: "+(batchFloor+i)+" @ bftime: "+bframeTime);
+                                    if (true || VERBOSE) Log.d(TAG, "Clearing bframe: "+(batchFloor+i)+" @ bftime: "+bframeTime+" & cftime: "+cframeTime+" & ptime: "+pframeTime);
                                 outputSurface.drawOnBatchImage(
                                     i,
-                                    lframeTime - bframeTime,
-                                    nframeTime - bframeTime,
-                                    cframeTime - bframeTime,
+                                    lframeTime - pframeTime,
+                                    nframeTime - pframeTime,
+                                    cframeTime - pframeTime,
                                     clear);
                             }
 
                         // set mode to draw batch frames and seek extractor
-                        float lbframeTime = (batchFloor + batchSize - 1) * 1000000L / args.frameRate;
-                        if (frameTimes.get(currentFrame) >= lbframeTime + args.amount) {
+                        if (lframeTime >= bceilTime) {
                             encodingBatch = true;
                             batchEncodeProg = 0;
                         } else currentFrame++;
