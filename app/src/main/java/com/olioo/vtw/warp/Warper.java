@@ -225,7 +225,7 @@ public class Warper extends AndroidTestCase {
                         batchFloor += batchSize;
                         encodingBatch = false;
                         // seek
-                        long time = (long)(batchFloor * 1000000L / args.frameRate - args.amount);
+                        long time = Math.max(0, (long)(batchFloor * 1000000L / args.frameRate - args.amount));
                         if (VERBOSE) Log.d(TAG, "Seeking to time: "+batchFloor+", at time: "+time);
                         extractor.seekTo(time, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
 //                            while (extractor.getSampleTime() < time) extractor.advance();
