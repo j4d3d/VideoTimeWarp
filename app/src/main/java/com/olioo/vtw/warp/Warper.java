@@ -24,7 +24,7 @@ import java.util.List;
 public class Warper extends AndroidTestCase {
 
     public final String TAG = "Warper";
-    public final boolean VERBOSE = false;
+    public final boolean VERBOSE = true;
     public final boolean WORK_AROUND_BUGS = true;
     public final int TIMEOUT_USEC = 10000;
 
@@ -56,8 +56,9 @@ public class Warper extends AndroidTestCase {
     public boolean halt = false;
     int currentFrame = 0;
     boolean outputDone = false;
-    boolean letDecoderEnd = true; //todo: false
+    boolean letDecoderEnd = false; //todo: false
     boolean extractorReachedEnd = false;
+    boolean encoderOutputAvailable, decoderOutputAvailable;
 
     public Warper(WarpArgs args) {
         self = this;
@@ -117,6 +118,8 @@ public class Warper extends AndroidTestCase {
         }
     }
 
+
+
     public void warp() {
         // codec and state vars
         decoderInputBuffers = decoder.getInputBuffers();
@@ -126,85 +129,40 @@ public class Warper extends AndroidTestCase {
         while (!outputDone) {
             if (VERBOSE) Log.d(TAG, "edit loop");
             // Feed more data to the decoder.
-            if (!extractorReachedEnd) {
+            if (!extractorReachedEnd || halt) {
                 int inputBufIndex = decoder.dequeueInputBuffer(TIMEOUT_USEC);
                 if (inputBufIndex >= 0) {
                     ByteBuffer inputBuf = decoderInputBuffers[inputBufIndex];
                     if (Build.VERSION.SDK_INT >= 21) inputBuf = decoder.getInputBuffer(inputBufIndex);
 
                     int chunkSize = extractor.readSampleData(inputBuf, 0);
-                    if (chunkSize < 0 || halt) {
-                        if (letDecoderEnd) {
-                            // End of stream -- send empty frame with EOS flag set.
-                            decoder.queueInputBuffer(inputBufIndex, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-                            extractorReachedEnd = true;
-                            if (VERBOSE) Log.d(TAG, "sent input EOS");
-                        }
+                    boolean end = halt;
+                    if (extractor.getSampleTime() == frameTimes.get(frameTimes.size()-2)) {
+                        extractorReachedEnd = true;
+                        if (letDecoderEnd) end = true;
+                    }
+
+                    if (end) {
+                        // End of stream -- send empty frame with EOS flag set.
+                        decoder.queueInputBuffer(inputBufIndex, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+                        if (VERBOSE) Log.d(TAG, "sent input EOS");
+                        encodingBatch = true;
+
                     } else {
-                        if (extractor.getSampleTrackIndex() != decoderTrackIndex) {
+                        if (extractor.getSampleTrackIndex() != decoderTrackIndex)
                             Log.w(TAG, "WEIRD: got sample from track " + extractor.getSampleTrackIndex() + ", expected " + decoderTrackIndex);
-                        }
-
                         decoder.queueInputBuffer(inputBufIndex, 0, chunkSize, extractor.getSampleTime(), 0 /*flags*/);
-
                         extractor.advance();
                     }
                 } else if (VERBOSE) Log.d(TAG, "input buffer not available");
             }
 
             // Assume output is available.  Loop until both assumptions are false.
-            boolean decoderOutputAvailable = true;
-            boolean encoderOutputAvailable = true;
+            decoderOutputAvailable = true;
+            encoderOutputAvailable = true;
             while (decoderOutputAvailable || encoderOutputAvailable) {
 
-                // Start by draining any pending output from the encoder.  It's important to
-                // do this before we try to stuff any more data in.
-                int encoderStatus = encoder.dequeueOutputBuffer(info, TIMEOUT_USEC);
-                if (encoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
-                    // no output available yet
-                    if (VERBOSE) Log.d(TAG, "no output from encoder available");
-                    encoderOutputAvailable = false;
-                } else if (encoderStatus == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
-                    encoderOutputBuffers = encoder.getOutputBuffers();
-                    if (VERBOSE) Log.d(TAG, "encoder output buffers changed");
-                } else if (encoderStatus == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
-                    MediaFormat newFormat = encoder.getOutputFormat();
-                    if (VERBOSE) Log.d(TAG, "encoder output format changed: " + newFormat);
-
-                    //start muxer now that we have the thing
-                    if (muxerStarted) throw new RuntimeException("format changed twice");
-                    try {
-                        muxer = new MediaMuxer(args.encodePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
-                    } catch (IOException ioe) {
-                        throw new RuntimeException("MediaMuxer creation failed, outputPath=\"" + args.encodePath + "\"", ioe);
-                    }
-                    encoderTrackIndex = muxer.addTrack(newFormat);
-                    muxer.start();
-                    muxerStarted = true;
-
-                } else if (encoderStatus < 0) {
-                    fail("unexpected result from encoder.dequeueOutputBuffer: " + encoderStatus);
-                } else { // encoderStatus >= 0
-
-                    ByteBuffer encodedData = encoderOutputBuffers[encoderStatus];
-                    if (encodedData == null) {
-                        fail("encoderOutputBuffer " + encoderStatus + " was null");
-                    }
-                    // Write the data to the output file.
-                    if (info.size != 0) {
-                        encodedData.position(info.offset);
-                        encodedData.limit(info.offset + info.size);
-                        muxer.writeSampleData(encoderTrackIndex, encodedData, info);
-                        if (VERBOSE) Log.d(TAG, "encoder output " + info.size + " bytes");
-                    }
-                    outputDone = (info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
-                    encoder.releaseOutputBuffer(encoderStatus, false);
-                }
-
-                if (encoderStatus != MediaCodec.INFO_TRY_AGAIN_LATER) {
-                    // Continue attempts to drain output.
-                    continue;
-                }
+                while (drainEncoder());
 
                 // Encoder is drained
 
@@ -212,25 +170,29 @@ public class Warper extends AndroidTestCase {
                     // Send it to the encoder.
                     int batchFrame = batchFloor + batchEncodeProg;
                     long batchTime = batchFrame * 1000000000L / args.frameRate;
-                    if (VERBOSE) Log.d(TAG, "Encoding batch at frame: "+(batchFrame)+", "+batchTime);
+                    if (batchTime / 1000 > frameTimes.get(frameTimes.size() - 2)) halt = true;
 
+                    if (VERBOSE) Log.d(TAG, "Encoding batch at frame: "+(batchFrame)+", "+batchTime);
                     outputSurface.drawImage(batchEncodeProg);
                     inputSurface.setPresentationTime(batchTime);
                     if (VERBOSE) Log.d(TAG, "swapBuffers");
                     inputSurface.swapBuffers();
                     batchEncodeProg++;
+
                     if (batchEncodeProg == batchSize) {
                         WarpService.instance.lastBatchFrame = batchFrame;
                         WarpService.instance.lastBatchTime = System.currentTimeMillis();
                         batchFloor += batchSize;
                         encodingBatch = false;
+                        batchEncodeProg = 0;
                         // seek
+                        extractorReachedEnd = false;
                         long time = Math.max(0, (long)(batchFloor * 1000000L / args.frameRate - args.amount));
                         if (VERBOSE) Log.d(TAG, "Seeking to time: "+batchFloor+", at time: "+time);
                         extractor.seekTo(time, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
-//                            while (extractor.getSampleTime() < time) extractor.advance();
+                        // what frame did we land on
                         long etime = extractor.getSampleTime();
-                        drainOlderThan = etime; // skip and drain frames left in codec from last batch
+                        drainOlderThan = etime; // tell to skip frames that are in
                         for (int i=0; i<frameTimes.size(); i++) {
                             if (etime == frameTimes.get(i)) {
                                 currentFrame = i;
@@ -242,7 +204,7 @@ public class Warper extends AndroidTestCase {
                     continue;
                 }
 
-                // Encoder is drained, check to see if we've got a new frame of output from
+                // Check to see if we've got a new frame of output from
                 // the decoder.  (The output is going to a Surface, rather than a ByteBuffer,
                 // but we still get information through BufferInfo.)
 
@@ -274,6 +236,8 @@ public class Warper extends AndroidTestCase {
                     decoder.releaseOutputBuffer(decoderStatus, doRender);
                     if (doRender) {
                         if (VERBOSE) Log.d(TAG, "currentFrame: "+currentFrame+", ptime: "+info.presentationTimeUs);
+
+                        // track progress
                         if (MainActivity.handle != null)
                             try {
                                 float prog = (float)info.presentationTimeUs / frameTimes.get(frameTimes.size()-2);
@@ -283,7 +247,6 @@ public class Warper extends AndroidTestCase {
                             }
 
                         // This waits for the image and renders it after it arrives.
-//                            if (VERBOSE) Log.d(TAG, "awaiting frame");
                         outputSurface.awaitNewImage();
 
                         //todo: could just drain these frames upon signaling encodingBatch
@@ -292,6 +255,9 @@ public class Warper extends AndroidTestCase {
                             if (info.presentationTimeUs > drainOlderThan) continue;
                             else drainOlderThan = -1;
                         }
+
+
+                        // ~~~ ONFRAME ~~~
 
                         float bceilTime = (batchFloor + batchSize - 1) * 1000000L / args.frameRate;
                         float lframeTime = frameTimes.get(Math.max(0, currentFrame-1));
@@ -318,7 +284,6 @@ public class Warper extends AndroidTestCase {
                         // set mode to draw batch frames and seek extractor
                         if (lframeTime >= bceilTime) {
                             encodingBatch = true;
-                            batchEncodeProg = 0;
                         } else currentFrame++;
                     }
 
@@ -337,6 +302,62 @@ public class Warper extends AndroidTestCase {
         }
     }
 
+
+    /**
+     * @return more available?
+     */
+    public boolean drainEncoder() {
+        // Start by draining any pending output from the encoder.  It's important to
+        // do this before we try to stuff any more data in.
+        int encoderStatus = encoder.dequeueOutputBuffer(info, TIMEOUT_USEC);
+        if (encoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
+            // no output available yet
+            if (VERBOSE) Log.d(TAG, "no output from encoder available");
+            encoderOutputAvailable = false;
+        } else if (encoderStatus == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
+            encoderOutputBuffers = encoder.getOutputBuffers();
+            if (VERBOSE) Log.d(TAG, "encoder output buffers changed");
+        } else if (encoderStatus == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+            MediaFormat newFormat = encoder.getOutputFormat();
+            if (VERBOSE) Log.d(TAG, "encoder output format changed: " + newFormat);
+
+            //start muxer now that we have the thing
+            if (muxerStarted) throw new RuntimeException("format changed twice");
+            try {
+                muxer = new MediaMuxer(args.encodePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+            } catch (IOException ioe) {
+                throw new RuntimeException("MediaMuxer creation failed, outputPath=\"" + args.encodePath + "\"", ioe);
+            }
+            encoderTrackIndex = muxer.addTrack(newFormat);
+            muxer.start();
+            muxerStarted = true;
+
+        } else if (encoderStatus < 0) {
+            fail("unexpected result from encoder.dequeueOutputBuffer: " + encoderStatus);
+        } else { // encoderStatus >= 0
+
+            ByteBuffer encodedData = encoderOutputBuffers[encoderStatus];
+            if (encodedData == null) {
+                fail("encoderOutputBuffer " + encoderStatus + " was null");
+            }
+            // Write the data to the output file.
+            if (info.size != 0) {
+                encodedData.position(info.offset);
+                encodedData.limit(info.offset + info.size);
+                muxer.writeSampleData(encoderTrackIndex, encodedData, info);
+                if (VERBOSE) Log.d(TAG, "encoder output " + info.size + " bytes");
+            }
+            outputDone = (info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
+            encoder.releaseOutputBuffer(encoderStatus, false);
+        }
+
+        if (encoderStatus != MediaCodec.INFO_TRY_AGAIN_LATER) {
+            // Continue attempts to drain output.
+            return true;
+        }
+
+        return false;
+    }
     public void release() {
         if (encoder != null) {
             encoder.stop();
