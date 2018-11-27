@@ -38,6 +38,7 @@ optimizations:
  - seeking and batchsize are the real limiters, though.
 
  Left to be done (ordered by estimated difficulty):
+ - failsafe to end warping if just spinning for ~10min
  - Framerate slider
  - Handle video orientation by rotating the UV coords in TextureRender
  - Time stretching (should not be hard at all)

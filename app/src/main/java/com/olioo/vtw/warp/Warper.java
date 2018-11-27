@@ -139,6 +139,7 @@ public class Warper extends AndroidTestCase {
                     boolean end = halt;
                     if (extractor.getSampleTime() == frameTimes.get(frameTimes.size()-2)) {
                         extractorReachedEnd = true;
+                        encodingBatch = true;
                         if (letDecoderEnd) end = true;
                     }
 
@@ -166,11 +167,15 @@ public class Warper extends AndroidTestCase {
 
                 // Encoder is drained
 
-                if (encodingBatch) {
+                if (!halt && encodingBatch) {
                     // Send it to the encoder.
                     int batchFrame = batchFloor + batchEncodeProg;
                     long batchTime = batchFrame * 1000000000L / args.frameRate;
-                    if (batchTime / 1000 > frameTimes.get(frameTimes.size() - 2)) halt = true;
+                    if (batchTime / 1000 > frameTimes.get(frameTimes.size() - 2) + args.amount) {
+                        halt = true;
+                        encodingBatch = false;
+                        continue;
+                    }
 
                     if (VERBOSE) Log.d(TAG, "Encoding batch at frame: "+(batchFrame)+", "+batchTime);
                     outputSurface.drawImage(batchEncodeProg);
@@ -351,13 +356,9 @@ public class Warper extends AndroidTestCase {
             encoder.releaseOutputBuffer(encoderStatus, false);
         }
 
-        if (encoderStatus != MediaCodec.INFO_TRY_AGAIN_LATER) {
-            // Continue attempts to drain output.
-            return true;
-        }
-
-        return false;
+        return (encoderStatus != MediaCodec.INFO_TRY_AGAIN_LATER);
     }
+
     public void release() {
         if (encoder != null) {
             encoder.stop();
