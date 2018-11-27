@@ -45,6 +45,8 @@ import com.olioo.vtw.warp.WarpService;
 
 import java.io.File;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -55,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
     public static final int HNDL_UPDATE_PROGRESS = 2;
     public static final int HNDL_HIDE_KEYBOARD = 3;
     public static final int HNDL_TOAST = 4;
+    public static final int HNDL_UPDATE_GUI = 5;
 
     public static final int VSL_WARP = 0;
     public static final int VSL_WATCH = 1;
@@ -116,6 +119,8 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case HNDL_TOAST:
                         Toast.makeText(context, (String)msg.obj, Toast.LENGTH_LONG).show();
+                    case HNDL_UPDATE_GUI:
+                        updateLytWarping(true); break;
                     default: Log.d("unhandled message", msg.what+"\t"+msg.obj); break;
                 }
             }
@@ -145,6 +150,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onStop() {
+        super.onStop();
+
+        guiTimer.purge();
+        guiTimer.cancel();
+    }
+
+    @Override
     protected void onDestroy() {
         // set static vars to null
         handle = null;
@@ -152,6 +165,7 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
+    Timer guiTimer;
     public ConstraintLayout lytGUI;
     public VideoView videoView;
 
@@ -167,6 +181,8 @@ public class MainActivity extends AppCompatActivity {
     public SeekBar seekSeconds;
     public jEditText boxScale;
     public SeekBar seekScale;
+    public jEditText boxFramerate;
+    public SeekBar seekFramerate;
     public jEditText boxBitrate;
     public SeekBar seekBitrate;
 
@@ -175,6 +191,7 @@ public class MainActivity extends AppCompatActivity {
     public TextView txtWarptype;
     public TextView txtSeconds;
     public TextView txtScale;
+    public TextView txtFramerate;
     public TextView txtBitrate;
     public TextView txtTimeleft;
 
@@ -198,6 +215,8 @@ public class MainActivity extends AppCompatActivity {
         seekSeconds = findViewById(R.id.seekSeconds);
         boxScale = findViewById(R.id.boxScale);
         seekScale = findViewById(R.id.seekScale);
+        boxFramerate = findViewById(R.id.boxFramerate);
+        seekFramerate = findViewById(R.id.seekFramerate);
         boxBitrate = findViewById(R.id.boxBitrate);
         seekBitrate = findViewById(R.id.seekBitrate);
         btnStart = findViewById(R.id.btnStart);
@@ -207,6 +226,7 @@ public class MainActivity extends AppCompatActivity {
         txtWarptype = findViewById(R.id.txtWarptype);
         txtSeconds = findViewById(R.id.txtSeconds);
         txtScale = findViewById(R.id.txtScale);
+        txtFramerate = findViewById(R.id.txtFramerate);
         txtBitrate = findViewById(R.id.txtBitrate);
         txtTimeleft = findViewById(R.id.txtTimeLeft);
         btnHalt = findViewById(R.id.btnHalt);
@@ -253,7 +273,18 @@ public class MainActivity extends AppCompatActivity {
             @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 float scale = progress/10000f;
                 boxScale.setText(""+(scale));
-                boxBitrate.setText(""+(int)(seekBitrate.getProgress()/10000f*decBitrate*1.5f*scale*scale));
+                updateBoxBitrate();
+            }
+            @Override public void onStartTrackingTouch(SeekBar seekBar) { }
+            @Override public void onStopTrackingTouch(SeekBar seekBar) { }
+        });
+
+        // framerate slider
+        seekFramerate.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                int framerate = 1 + Math.round(progress/10000f*59);
+                boxFramerate.setText(""+(framerate));
+//                updateBoxBitrate();
             }
             @Override public void onStartTrackingTouch(SeekBar seekBar) { }
             @Override public void onStopTrackingTouch(SeekBar seekBar) { }
@@ -263,7 +294,7 @@ public class MainActivity extends AppCompatActivity {
         seekBitrate.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 float scale = Float.parseFloat(boxScale.getText()+"");
-                boxBitrate.setText(""+(int)(progress/10000f*decBitrate*1.5f*scale*scale));
+                updateBoxBitrate();
             }
             @Override public void onStartTrackingTouch(SeekBar seekBar) { }
             @Override public void onStopTrackingTouch(SeekBar seekBar) { }
@@ -272,7 +303,16 @@ public class MainActivity extends AppCompatActivity {
         btnStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                // check that decPath does match encPath
+                File a = new File(decPath);
+                File b = new File(Environment.getExternalStorageDirectory()+"/"+boxFileName.getText()+".mp4");
+                if (a.getAbsolutePath().equals(b.getAbsolutePath())) {
+                    handle.obtainMessage(HNDL_TOAST, "Can not overwrite source video, please change Filename.").sendToTarget();
+                    return;
+                }
+
                 startWarpService();
+
                 decPath = null; // gui state based on this
                 handle.obtainMessage(HNDL_HIDE_KEYBOARD, lytWarp).sendToTarget();
                 lytWarp.setVisibility(View.GONE);
@@ -284,7 +324,11 @@ public class MainActivity extends AppCompatActivity {
         btnHalt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                WarpService.instance.warper.halt = true;
+                try { // instance may become null at any moment
+                    WarpService.instance.warper.halt = true;
+                } catch (NullPointerException e) {
+                    e.printStackTrace();
+                }
                 lytWarping.setVisibility(View.GONE);
             }
         });
@@ -301,6 +345,22 @@ public class MainActivity extends AppCompatActivity {
 
         // which lyt to show?
         guiByState();
+
+        // start GUI heartbeat timer, updates gui elements
+        guiTimer = new Timer();
+        guiTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                // update time remaining estimate
+                if (handle != null) handle.obtainMessage(HNDL_UPDATE_GUI).sendToTarget();
+            }
+        }, 0, 1000);
+    }
+
+    void updateBoxBitrate() {
+        // todo: factor in framerate, this means we will need the framerate of the decoded video
+        float scale = Float.parseFloat(boxScale.getText()+"");
+        boxBitrate.setText(""+(int)(seekBitrate.getProgress()/10000f*decBitrate*1.5f*scale*scale));
     }
 
     void guiByState() {
@@ -308,7 +368,7 @@ public class MainActivity extends AppCompatActivity {
             lytMain.setVisibility(View.GONE);
             lytWarp.setVisibility(View.GONE);
             lytWarping.setVisibility(View.VISIBLE);
-            updateLytWarping();
+            updateLytWarping(false);
         } else if (decPath != null) {
             lytMain.setVisibility(View.GONE);
             lytWarp.setVisibility(View.VISIBLE);
@@ -320,19 +380,27 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    void updateLytWarping() {
-        // update warping GUI
-        txtFilename.setText(WarpService.instance.args.filename);
-        txtWarptype.setText(getResources().getStringArray(R.array.warp_modes)[WarpService.instance.args.warpType]);
-        txtSeconds.setText(String.format("%.4f", (WarpService.instance.args.amount/1000000f)));
-        txtScale.setText(String.format("%.4f", WarpService.instance.args.scale));
-        txtBitrate.setText(WarpService.instance.args.bitrate+"");
+    void updateLytWarping(boolean justClock) {
+        if ( lytWarping.getVisibility() != View.VISIBLE) return;
+        // temp save instance reference in case it goes null on us
+        WarpService _instance = WarpService.instance;
+        if (_instance == null) return;
 
-        long elapsed = WarpService.instance.lastBatchTime - WarpService.instance.birth;
-        float prog = (float)WarpService.instance.lastBatchFrame / WarpService.instance.anticipatedBatchFrames;
+        if (true || !justClock) {
+            // update warping GUI
+            txtFilename.setText(_instance.args.filename);
+            txtWarptype.setText(getResources().getStringArray(R.array.warp_modes)[_instance.args.warpType]);
+            txtSeconds.setText(String.format("%.4f", (_instance.args.amount / 1000000f)));
+            txtScale.setText(String.format("%.4f", _instance.args.scale));
+            txtFramerate.setText(""+_instance.args.frameRate);
+            txtBitrate.setText(_instance.args.bitrate + "");
+        }
+
+        long elapsed = _instance.lastBatchTime - _instance.birth;
+        float prog = (float) _instance.lastBatchFrame / _instance.anticipatedBatchFrames;
         if (prog == 0) txtTimeleft.setText("Calculating...");
         else {
-            float remaining = (elapsed / prog) - (System.currentTimeMillis() - WarpService.instance.birth);
+            float remaining = (elapsed / prog) - (System.currentTimeMillis() - _instance.birth);
             int hours = (int) Math.floor(remaining / 3600000);
             remaining -= hours * 3600000;
             int min = (int) Math.floor(remaining / 60000);
@@ -348,6 +416,13 @@ public class MainActivity extends AppCompatActivity {
 
         if (resultCode == RESULT_OK) {
             final Uri targetUri = data.getData();
+            final String uriPath = Helper.getRealPathFromURI(getBaseContext(), targetUri);
+            // ensure path actually exists
+            if (!new File(uriPath).exists()) {
+                handle.obtainMessage(HNDL_TOAST, "Selected video doesn't actually exist!").sendToTarget();
+                return;
+            }
+
             switch (requestCode) {
                 case VSL_WARP:
                     Runnable runnable = new Runnable() {
@@ -370,19 +445,11 @@ public class MainActivity extends AppCompatActivity {
                             }
 
                             //path of chosen video
-                            decPath = Helper.getRealPathFromURI(getBaseContext(), targetUri);
-                            // ensure it does match encPath
-                            File a = new File(decPath);
-                            File b = new File(Environment.getExternalStorageDirectory()+"/"+boxFileName.getText()+".mp4");
-                            if (a.getAbsolutePath().equals(b.getAbsolutePath())) {
-                                handle.obtainMessage(HNDL_TOAST, "Can not overwrite source video, please change Filename.").sendToTarget();
-                                decPath = null;
-                                return;
-                            }
-
+                            decPath = uriPath;
 
                             MediaMetadataRetriever mmr = new MediaMetadataRetriever();
                             mmr.setDataSource(decPath);
+                            // todo: does this ever return null?
                             decBitrate = (int)Long.parseLong(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE));
                             float scale = Float.parseFloat(boxScale.getText()+"");
                             boxBitrate.setText(""+(int)(seekBitrate.getProgress()/10000f*decBitrate*1.2f*scale*scale));
@@ -399,7 +466,8 @@ public class MainActivity extends AppCompatActivity {
 
                     break;
                 case VSL_WATCH:
-                    outPath = Helper.getRealPathFromURI(getBaseContext(), targetUri);
+                    outPath = uriPath;
+
                     videoView.setVideoURI(Uri.parse(outPath));
                     videoView.start();
                     break;
@@ -415,6 +483,7 @@ public class MainActivity extends AppCompatActivity {
         serviceIntent.putExtra("invertExtra", swtInvert.isChecked());
         serviceIntent.putExtra("secondsExtra", Float.parseFloat(boxSeconds.getText()+"")*1000000);
         serviceIntent.putExtra("scaleExtra", Float.parseFloat(boxScale.getText()+""));
+        serviceIntent.putExtra("framerateExtra", Integer.parseInt(boxFramerate.getText()+""));
         serviceIntent.putExtra("bitrateExtra", Integer.parseInt(boxBitrate.getText()+""));
 
         ContextCompat.startForegroundService(this, serviceIntent);

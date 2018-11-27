@@ -33,32 +33,33 @@ public class Warper extends AndroidTestCase {
 
     List<Long> frameTimes = new ArrayList<Long>();
 
+    // warp components
     MediaMetadataRetriever metadataRetriever;
     MediaExtractor extractor;
     MediaCodec decoder, encoder;
+    MediaMuxer muxer;
+    // warp component stuff
+    ByteBuffer[] decoderInputBuffers, encoderOutputBuffers;
+    MediaCodec.BufferInfo info;
     int decoderTrackIndex = -1;
     int encoderTrackIndex = -1;
     MediaFormat inputFormat, outputFormat;
     InputSurface inputSurface;
     OutputSurface outputSurface;
-    ByteBuffer[] decoderInputBuffers, encoderOutputBuffers;
-    MediaCodec.BufferInfo info;
-    MediaMuxer muxer;
+    // warp component status / info
     boolean muxerStarted;
 
+    // warper logic
+    public boolean halt = false;
+    boolean outputDone = false;
+    boolean extractorReachedEnd = false;
+    boolean encoderOutputAvailable, decoderOutputAvailable;
+    int currentFrame = 0;
     // batch stuff
     boolean encodingBatch = false;
     long drainOlderThan = -1;
     int batchEncodeProg = 0, batchFloor = 0;
     public int batchSize = 16;
-
-    // warper logic
-    public boolean halt = false;
-    int currentFrame = 0;
-    boolean outputDone = false;
-    boolean letDecoderEnd = false; //todo: false
-    boolean extractorReachedEnd = false;
-    boolean encoderOutputAvailable, decoderOutputAvailable;
 
     public Warper(WarpArgs args) {
         self = this;
@@ -113,19 +114,17 @@ public class Warper extends AndroidTestCase {
             decoder.configure(inputFormat, outputSurface.getSurface(), null, 0);
             decoder.start();
 
+            // codec vars
+            decoderInputBuffers = decoder.getInputBuffers();
+            encoderOutputBuffers = encoder.getOutputBuffers();
+            info = new MediaCodec.BufferInfo();
+
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-
-
     public void warp() {
-        // codec and state vars
-        decoderInputBuffers = decoder.getInputBuffers();
-        encoderOutputBuffers = encoder.getOutputBuffers();
-        info = new MediaCodec.BufferInfo();
-
         while (!outputDone) {
             if (VERBOSE) Log.d(TAG, "edit loop");
             // Feed more data to the decoder.
@@ -140,7 +139,6 @@ public class Warper extends AndroidTestCase {
                     if (extractor.getSampleTime() == frameTimes.get(frameTimes.size()-2)) {
                         extractorReachedEnd = true;
                         encodingBatch = true;
-                        if (letDecoderEnd) end = true;
                     }
 
                     if (end) {
@@ -159,59 +157,19 @@ public class Warper extends AndroidTestCase {
             }
 
             // Assume output is available.  Loop until both assumptions are false.
-            decoderOutputAvailable = true;
-            encoderOutputAvailable = true;
+            decoderOutputAvailable = encoderOutputAvailable = true;
             while (decoderOutputAvailable || encoderOutputAvailable) {
 
+                // Drain encoder
                 while (drainEncoder());
 
-                // Encoder is drained
-
+                // Encode a batch frame and continue if encodingBatch
                 if (!halt && encodingBatch) {
-                    // Send it to the encoder.
-                    int batchFrame = batchFloor + batchEncodeProg;
-                    long batchTime = batchFrame * 1000000000L / args.frameRate;
-                    if (batchTime / 1000 > frameTimes.get(frameTimes.size() - 2) + args.amount) {
-                        halt = true;
-                        encodingBatch = false;
-                        continue;
-                    }
-
-                    if (VERBOSE) Log.d(TAG, "Encoding batch at frame: "+(batchFrame)+", "+batchTime);
-                    outputSurface.drawImage(batchEncodeProg);
-                    inputSurface.setPresentationTime(batchTime);
-                    if (VERBOSE) Log.d(TAG, "swapBuffers");
-                    inputSurface.swapBuffers();
-                    batchEncodeProg++;
-
-                    if (batchEncodeProg == batchSize) {
-                        WarpService.instance.lastBatchFrame = batchFrame;
-                        WarpService.instance.lastBatchTime = System.currentTimeMillis();
-                        batchFloor += batchSize;
-                        encodingBatch = false;
-                        batchEncodeProg = 0;
-                        // seek
-                        extractorReachedEnd = false;
-                        long time = Math.max(0, (long)(batchFloor * 1000000L / args.frameRate - args.amount));
-                        if (VERBOSE) Log.d(TAG, "Seeking to time: "+batchFloor+", at time: "+time);
-                        extractor.seekTo(time, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
-                        // what frame did we land on
-                        long etime = extractor.getSampleTime();
-                        drainOlderThan = etime; // tell to skip frames that are in
-                        for (int i=0; i<frameTimes.size(); i++) {
-                            if (etime == frameTimes.get(i)) {
-                                currentFrame = i;
-                                if (VERBOSE) Log.d(TAG, "sought batchFloor: " + batchFloor + ", currentFrame: " + currentFrame);
-                                break;
-                            }
-                        }
-                    }
+                    encodeBatchFrame();
                     continue;
                 }
 
-                // Check to see if we've got a new frame of output from
-                // the decoder.  (The output is going to a Surface, rather than a ByteBuffer,
-                // but we still get information through BufferInfo.)
+                // Drain decoder, drawing applicable decoded frames on batchFrames
 
                 int decoderStatus = decoder.dequeueOutputBuffer(info, TIMEOUT_USEC);
                 if (decoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
@@ -230,14 +188,8 @@ public class Warper extends AndroidTestCase {
                 } else { // decoderStatus >= 0
                     if (VERBOSE) Log.d(TAG, "surface decoder given buffer "
                             + decoderStatus + " (size=" + info.size + ")");
-                    // The ByteBuffers are null references, but we still get a nonzero
-                    // size for the decoded data.
+
                     boolean doRender = (info.size != 0);
-                    // As soon as we call releaseOutputBuffer, the buffer will be forwarded
-                    // to SurfaceTexture to convert to a texture.  The API doesn't
-                    // guarantee that the texture will be available before the call
-                    // returns, so we need to wait for the onFrameAvailable callback to
-                    // fire.  If we don't wait, we risk rendering from the previous frame.
                     decoder.releaseOutputBuffer(decoderStatus, doRender);
                     if (doRender) {
                         if (VERBOSE) Log.d(TAG, "currentFrame: "+currentFrame+", ptime: "+info.presentationTimeUs);
@@ -254,13 +206,11 @@ public class Warper extends AndroidTestCase {
                         // This waits for the image and renders it after it arrives.
                         outputSurface.awaitNewImage();
 
-                        //todo: could just drain these frames upon signaling encodingBatch
-                        //todo: also might not need to awaitNewImage()
+                        // Skip frames left over from last batch
                         if (drainOlderThan > 0) {
                             if (info.presentationTimeUs > drainOlderThan) continue;
                             else drainOlderThan = -1;
                         }
-
 
                         // ~~~ ONFRAME ~~~
 
@@ -307,10 +257,51 @@ public class Warper extends AndroidTestCase {
         }
     }
 
+    public void encodeBatchFrame() {
+        // get frame # and time
+        int batchFrame = batchFloor + batchEncodeProg;
+        long batchTime = batchFrame * 1000000000L / args.frameRate;
+        // halt warper if we've made it far enough
+        if (batchTime / 1000 > frameTimes.get(frameTimes.size() - 2) + args.amount) {
+            halt = true;
+            encodingBatch = false;
+            return;
+        }
 
-    /**
-     * @return more available?
-     */
+        if (VERBOSE) Log.d(TAG, "Encoding batch at frame: "+(batchFrame)+", "+batchTime);
+        outputSurface.drawImage(batchEncodeProg);
+        inputSurface.setPresentationTime(batchTime);
+        if (VERBOSE) Log.d(TAG, "swapBuffers");
+        inputSurface.swapBuffers();
+        batchEncodeProg++;
+
+        if (batchEncodeProg == batchSize) {
+            WarpService.instance.lastBatchFrame = batchFrame;
+            WarpService.instance.lastBatchTime = System.currentTimeMillis();
+            // increment bfloor and reset batch controller state
+            batchFloor += batchSize;
+            encodingBatch = false;
+            batchEncodeProg = 0;
+            // seek
+            extractorReachedEnd = false;
+            long time = Math.max(0, (long)(batchFloor * 1000000L / args.frameRate - args.amount));
+            if (VERBOSE) Log.d(TAG, "Seeking to time: "+batchFloor+", at time: "+time);
+            extractor.seekTo(time, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
+            // what frame did we land on
+            long etime = extractor.getSampleTime();
+            drainOlderThan = etime; // tell to skip frames that are in
+            for (int i=0; i<frameTimes.size(); i++) {
+                if (etime == frameTimes.get(i)) {
+                    currentFrame = i;
+                    if (VERBOSE) Log.d(TAG, "sought batchFloor: " + batchFloor + ", currentFrame: " + currentFrame);
+                    break;
+                }
+            }
+        }
+    };
+
+    /** drainEncoder boilerplate
+     * @return draining not done? */
     public boolean drainEncoder() {
         // Start by draining any pending output from the encoder.  It's important to
         // do this before we try to stuff any more data in.

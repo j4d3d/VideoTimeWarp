@@ -64,6 +64,7 @@ public class WarpService extends Service {
         args.invertWarp = intent.getBooleanExtra("invertExtra", false);
         args.amount = intent.getFloatExtra("secondsExtra", 1f); // 1 microsecond lol
         args.scale = intent.getFloatExtra("scaleExtra", 1f);
+        args.frameRate = intent.getIntExtra("framerateExtra", 0);
         args.bitrate = intent.getIntExtra("bitrateExtra", 1);
 
         Intent notificationIntent = new Intent(this, MainActivity.class);
@@ -113,7 +114,6 @@ public class WarpService extends Service {
                 try {
                     // warp args that must be profiled
                     args.profileDecodee(args.decodePath);
-                    args.frameRate = 30;
                     Log.d("WarpArgs", args.print());
 
                     // create warper and use it

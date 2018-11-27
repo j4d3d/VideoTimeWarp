@@ -38,11 +38,14 @@ optimizations:
  - seeking and batchsize are the real limiters, though.
 
  Left to be done (ordered by estimated difficulty):
- - failsafe to end warping if just spinning for ~10min
- - Framerate slider
+ - Smooth edges of warp head/tail
+ - "Trim video"/"Pad video" toggle switch
+    - Warning if video too short and not trimming either
+ - Failsafe to end warping if just spinning for ~10min
  - Handle video orientation by rotating the UV coords in TextureRender
+    - Can even hardcode in the shader when building it
  - Time stretching (should not be hard at all)
- - Black padding frames on beginning and end
+ - "Judder" may be a result of frames not drained when shifting batch
 
         ~ not hard but time consuming ~
  - Test on AWS (deposit some $ in acct. first)
@@ -58,3 +61,9 @@ optimizations:
                 x Window displaying current warp args including ETA
  x Can we release muxer in a finally block to give moov atoms to video halted by a crash? (yep)
  x Add VTW icon
+ x Black padding frames on beginning and end
+ x Framerate slider
+
+
+ GUI crashes to handle?:
+ Framerate == 0

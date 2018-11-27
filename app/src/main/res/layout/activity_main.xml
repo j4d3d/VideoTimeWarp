@@ -64,14 +64,13 @@
             android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            app:layout_constraintStart_toStartOf="parent">
 
             <ScrollView
                 android:id="@+id/scrollView3"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintBottom_toTopOf="@+id/btnHalt"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.0"
                 app:layout_constraintStart_toStartOf="parent"
@@ -227,6 +226,37 @@
                             tools:layout_editor_absoluteY="8dp">
 
                             <TextView
+                                android:id="@+id/textView15"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_alignParentStart="true"
+                                android:layout_weight="1"
+                                android:text="Framerate:"
+                                android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+
+                            <TextView
+                                android:id="@+id/txtFramerate"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_alignParentEnd="true"
+                                android:layout_weight="1"
+                                android:text="~~~~~~~~~"
+                                android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+
+                        </RelativeLayout>
+
+                        <RelativeLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_margin="4dp"
+                            android:background="@android:color/holo_blue_light"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:padding="4dp"
+                            tools:layout_editor_absoluteX="8dp"
+                            tools:layout_editor_absoluteY="8dp">
+
+                            <TextView
                                 android:id="@+id/textView16"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -280,19 +310,17 @@
 
                     </LinearLayout>
 
-                    <Button
-                        android:id="@+id/btnHalt"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="HALT WARPING"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent" />
-
                 </LinearLayout>
             </ScrollView>
+
+            <Button
+                android:id="@+id/btnHalt"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="HALT WARPING"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent" />
 
         </android.support.constraint.ConstraintLayout>
 
@@ -303,16 +331,14 @@
             android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            app:layout_constraintStart_toStartOf="parent">
 
             <ScrollView
                 android:id="@+id/scrollView2"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintBottom_toTopOf="@+id/btnStart"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_bias="0.0"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent">
 
@@ -557,6 +583,53 @@
                             tools:layout_editor_absoluteY="8dp">
 
                             <TextView
+                                android:id="@+id/lblFramerate"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_alignParentStart="true"
+                                android:layout_weight="1"
+                                android:text="Framerate"
+                                android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+
+                            <SeekBar
+                                android:id="@+id/seekFramerate"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="3dp"
+                                android:layout_toEndOf="@+id/lblFramerate"
+                                android:layout_toStartOf="@+id/boxFramerate"
+                                android:layout_weight="1"
+                                android:max="10000"
+                                android:paddingLeft="4dp"
+                                android:paddingRight="4dp"
+                                android:progress="5000" />
+
+                            <com.olioo.vtw.gui.jEditText
+                                android:id="@+id/boxFramerate"
+                                android:layout_width="80dp"
+                                android:layout_height="wrap_content"
+                                android:layout_alignParentEnd="true"
+                                android:layout_weight="1"
+                                android:background="#ffffff"
+                                android:ems="10"
+                                android:inputType="number"
+                                android:text="30"
+                                android:textAlignment="center" />
+
+                        </RelativeLayout>
+
+                        <RelativeLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:layout_margin="4dp"
+                            android:background="@android:color/holo_blue_light"
+                            android:orientation="horizontal"
+                            android:padding="4dp"
+                            tools:layout_editor_absoluteX="8dp"
+                            tools:layout_editor_absoluteY="8dp">
+
+                            <TextView
                                 android:id="@+id/textView5"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -594,14 +667,17 @@
 
                     </LinearLayout>
 
-                    <Button
-                        android:id="@+id/btnStart"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="START WARPING" />
                 </LinearLayout>
             </ScrollView>
+
+            <Button
+                android:id="@+id/btnStart"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="START WARPING"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent" />
 
         </android.support.constraint.ConstraintLayout>
 
