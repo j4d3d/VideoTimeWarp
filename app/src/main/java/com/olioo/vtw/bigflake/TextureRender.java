@@ -97,9 +97,10 @@ public class TextureRender {
             "uniform float warpAmount;\n" +
             "void main() {\n" +
             "  vec2 coord = vTextureCoord;\n" +
-            "  coord.y = (1.0 - coord.y);\n" +
-            "  vec4 scol = texture2D(sTexture, coord);\n";
+            "  vec2 scoord = vTextureCoord;\n"; // scoord used for color sampler
+
     private static final String FRAGMENT_SHADER2B =
+            "  vec4 scol = texture2D(sTexture, scoord);\n" +
             "  float lfDiff = cframeTime - lframeTime;\n" +
             "  float nfDiff = nframeTime - cframeTime;\n" +
             "  float mod = 0.0;\n"+
@@ -109,22 +110,26 @@ public class TextureRender {
             "}";
 
     private static final String[] WARP_FUNCTION = new String[]{
-            "  float warp = coord.x * warpAmount;\n",
-
             "  float warp = coord.y * warpAmount;\n",
+
+            "  float warp = coord.x * warpAmount;\n",
 
             "  float warp = (coord.x + coord.y) / 2.0 * warpAmount;\n",
 
             "  float warp = ((1.0 - coord.x) + coord.y) / 2.0 * warpAmount;\n",
 
-            "  vec2 acoord = vec2(coord.x * aRatio, coord.y / aRatio);\n" +
-            "  float warp = distance(acoord, vec2(0.5 * aRatio, 0.5 / aRatio)) / dist * warpAmount;\n",
+            "  vec2 acoord = vec2((coord.x - 0.5) * aRatio, (coord.y - 0.5));\n" +
+            "  float warp = (1.0 - distance(acoord, vec2(0, 0)) / dist) * warpAmount;\n",
 
-            "  vec2 acoord = vec2(coord.x * aRatio, coord.y / aRatio);\n" +
-            "  float warp = distance(acoord, vec2(0.5 * aRatio, 0.0)) / dist * warpAmount;\n",
+            "  vec2 acoord = vec2(coord.x * aRatio, coord.y);\n" +
+            "  float warp = (1.0 - distance(acoord, vec2(0.5 * aRatio, 1.0)) / dist) * warpAmount;\n",
 
-            "  vec2 acoord = vec2(coord.x * aRatio, coord.y / aRatio);\n" +
-            "  float warp = distance(acoord, vec2(0.5 * aRatio, 0.0)) / dist * warpAmount;\n",
+            "  vec2 acoord = vec2(coord.x * aRatio, coord.y);\n" +
+            "  float warp = (1.0 - distance(acoord, vec2(0.5 * aRatio, 0.0)) / dist) * warpAmount;\n",
+
+            "  float warp = sin(coord.y * 3.1416) * warpAmount;\n",
+
+            "  float warp = sin(coord.x * 3.1416) * warpAmount;\n",
     };
     /** warpTypes:
      0:  Vertical
@@ -136,13 +141,31 @@ public class TextureRender {
      6:  HalfDome-Bottom  */
     public String getFragShader(WarpArgs args) {
         String o = FRAGMENT_SHADER2A;
+        // adjust coord to account for orientations
+        // and my lack of proper transformation adjustment
+        switch (args.orientation) {
+            case 0:
+                o += "  scoord.y = 1.0 - coord.y;\n";
+                break;
+            case 180:
+                o += "  scoord.x = 1.0 - coord.x;\n";
+                break;
+            case 90:
+                o += "  scoord.x = 1.0 - coord.y;\n";
+                o += "  scoord.y = 1.0 - coord.x;\n";
+                break;
+            case 270:
+                o += "  scoord.x = coord.y;\n";
+                o += "  scoord.y = coord.x;\n";
+                break;
+        }
         // embed aspect ratio variable if required
         float aRatio = (float)args.decWidth / args.decHeight;
         if (args.warpType >= 2) o += "  float aRatio = "+String.format("%.4f", (float)args.decWidth / args.decHeight)+";\n";
         switch (args.warpType) {
-            case 4: o += "  float dist = "+String.format("%.4f", (float)Math.sqrt(aRatio*aRatio + 1/aRatio/aRatio))+";\n"; break;
-            case 5: o += "  float dist = "+String.format("%.4f", (float)Math.sqrt(aRatio/2*aRatio/2 + 1/aRatio/aRatio))+";\n"; break;
-            case 6: o += "  float dist = "+String.format("%.4f", (float)Math.sqrt(aRatio/2*aRatio/2 + 1/aRatio/aRatio))+";\n"; break;
+            case 4: o += "  float dist = "+String.format("%.4f", (float)Math.sqrt(aRatio/2*aRatio/2 + 1f/2/2))+";\n"; break;
+            case 5: o += "  float dist = "+String.format("%.4f", (float)Math.sqrt(aRatio/2*aRatio/2 + 1))+";\n"; break;
+            case 6: o += "  float dist = "+String.format("%.4f", (float)Math.sqrt(aRatio/2*aRatio/2 + 1))+";\n"; break;
         }
         o += WARP_FUNCTION[WarpService.instance.warper.args.warpType];
         if (WarpService.instance.warper.args.invertWarp) o += "  warp = warpAmount - warp;\n";

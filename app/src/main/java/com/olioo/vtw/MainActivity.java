@@ -24,6 +24,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.Spinner;
@@ -165,6 +166,7 @@ public class MainActivity extends AppCompatActivity {
     public Button btnWatch;
 
     public ConstraintLayout lytWarp;
+    public FrameLayout emptySpaceWarp;
     public jEditText boxFileName;
     public Spinner spinWarpType;
     public Switch swtInvert;
@@ -181,6 +183,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     public ConstraintLayout lytWarping;
+    public FrameLayout emptySpaceWarping;
     public ProgressBar progWarp;
     public TextView txtFilename;
     public TextView txtWarptype;
@@ -202,6 +205,7 @@ public class MainActivity extends AppCompatActivity {
         btnWatch = findViewById(R.id.btnWatch);
 
         lytWarp = findViewById(R.id.lytWarp);
+        emptySpaceWarp = findViewById(R.id.emptySpaceWarp);
         boxFileName = findViewById(R.id.boxFileName);
         spinWarpType = findViewById(R.id.spinWarpType);
         swtInvert = findViewById(R.id.swtInvert);
@@ -217,6 +221,7 @@ public class MainActivity extends AppCompatActivity {
         btnStart = findViewById(R.id.btnStart);
 
         lytWarping = findViewById(R.id.lytWarping);
+        emptySpaceWarping = findViewById(R.id.emptySpaceWarping);
         txtFilename = findViewById(R.id.txtFilename);
         txtWarptype = findViewById(R.id.txtWarptype);
         txtSeconds = findViewById(R.id.txtSeconds);
@@ -352,6 +357,22 @@ public class MainActivity extends AppCompatActivity {
                 if (lytGUI.getVisibility() == View.VISIBLE)
                     lytGUI.setVisibility(View.GONE);
                 else lytGUI.setVisibility(View.VISIBLE);
+                return false;
+            }
+        });
+
+        emptySpaceWarp.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                lytGUI.setVisibility(View.GONE);
+                return false;
+            }
+        });
+
+        emptySpaceWarping.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                lytGUI.setVisibility(View.GONE);
                 return false;
             }
         });

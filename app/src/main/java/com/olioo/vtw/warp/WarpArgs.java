@@ -23,6 +23,7 @@ public class WarpArgs {
     public long vidDuration;
     public int numFrames;
     public float decFrameRate;
+    public int orientation;
     //decodee dependent
     public float minScale;
 
@@ -105,8 +106,8 @@ public class WarpArgs {
         int minDim = decWidth; if (decHeight < decWidth) minDim = decHeight;
         minScale = (float) 128 / minDim; //todo: profiler.minSize
         //portrait or landscape?
-        int vidOrientation = Integer.parseInt(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION));
-        if (vidOrientation % 180 != 0) {
+        orientation = Integer.parseInt(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION));
+        if (orientation % 180 != 0) {
             int swap = decWidth;
             decWidth = decHeight;
             decHeight = swap;

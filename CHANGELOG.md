@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.0.3] - 2018-11-29
+### Added
+- Two warp modes: Mirror Vertical and Mirror Horizontal
+
+### Fixed
+- Video orientation now adjusted for in frag shader
+- Aspect ratio scalings on radial warp modes
+- Empty portions of lytWarp and lytWarping now toggle gui on touch, same as videoView
+
 ## [0.0.2] - 2018-11-28
 ### Added
 - Progress bar style

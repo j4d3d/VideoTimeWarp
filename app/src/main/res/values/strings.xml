@@ -9,6 +9,8 @@
         <item>Radial</item>
         <item>Radial-Top</item>
         <item>Radial-Bottom</item>
+        <item>Mirror-Vertical</item>
+        <item>Mirror-Horizontal</item>
         <!--<item>Image/Video (coming soon)</item>-->
         <!--<item>Custom Function (coming soon)</item>-->
     </string-array>
