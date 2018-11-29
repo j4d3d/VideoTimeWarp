@@ -88,7 +88,7 @@ public class Warper extends AndroidTestCase {
             extractor.seekTo(0, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
             if (extractor.getSampleTime() != frameTimes.get(0))
                 throw new RuntimeException("Failed at seeking to beginning of video. Seeked to: "+extractor.getSampleTime());
-            WarpService.instance.anticipatedBatchFrames = frameTimes.size();
+            WarpService.instance.anticipatedVideoDuration = (long)(frameTimes.get(frameTimes.size()-2) + args.amount);
 
             // setup formats
             inputFormat = extractor.getTrackFormat(decoderTrackIndex);
@@ -274,10 +274,11 @@ public class Warper extends AndroidTestCase {
         if (VERBOSE) Log.d(TAG, "swapBuffers");
         inputSurface.swapBuffers();
         batchEncodeProg++;
+        // est. time remaining variables
+        WarpService.instance.encodedLength = batchTime / 1000;
+        WarpService.instance.lastBatchFrameTime = System.currentTimeMillis();
 
         if (batchEncodeProg == batchSize) {
-            WarpService.instance.lastBatchFrame = batchFrame;
-            WarpService.instance.lastBatchTime = System.currentTimeMillis();
             // increment bfloor and reset batch controller state
             batchFloor += batchSize;
             encodingBatch = false;

@@ -1,19 +1,14 @@
 package com.olioo.vtw;
 
 import android.Manifest;
-import android.app.ActionBar;
 import android.app.Activity;
-import android.app.ActivityManager;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.Handler;
-import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.provider.MediaStore;
@@ -21,11 +16,9 @@ import android.support.constraint.ConstraintLayout;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.Layout;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
@@ -40,11 +33,9 @@ import android.widget.Toast;
 import android.widget.VideoView;
 import com.olioo.vtw.gui.jEditText;
 import com.olioo.vtw.util.Helper;
-import com.olioo.vtw.warp.WarpArgs;
 import com.olioo.vtw.warp.WarpService;
 
 import java.io.File;
-import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -69,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
     static String outPath = null;
     // vars necessary for gui
     static long decBitrate = -1;
+    static int warpType = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,7 +101,6 @@ public class MainActivity extends AppCompatActivity {
                         videoView.start();
                         lytMain.setVisibility(View.VISIBLE);
                         lytWarping.setVisibility(View.GONE);
-                        progWarp.setVisibility(View.GONE);
                         break;
                     //case HNDL_WATCH_VID: break;
                     case HNDL_HIDE_KEYBOARD:
@@ -185,8 +176,12 @@ public class MainActivity extends AppCompatActivity {
     public SeekBar seekFramerate;
     public jEditText boxBitrate;
     public SeekBar seekBitrate;
+    public Button btnCancel;
+    public Button btnStart;
+
 
     public ConstraintLayout lytWarping;
+    public ProgressBar progWarp;
     public TextView txtFilename;
     public TextView txtWarptype;
     public TextView txtSeconds;
@@ -194,11 +189,10 @@ public class MainActivity extends AppCompatActivity {
     public TextView txtFramerate;
     public TextView txtBitrate;
     public TextView txtTimeleft;
-
+    public Button btnWarpingWatch;
     public Button btnHalt;
-    public ProgressBar progWarp;
 
-    public Button btnStart;
+
     public void setupGUI() {
         lytGUI = findViewById(R.id.lytGUI);
         videoView = findViewById(R.id.videoView);
@@ -219,6 +213,7 @@ public class MainActivity extends AppCompatActivity {
         seekFramerate = findViewById(R.id.seekFramerate);
         boxBitrate = findViewById(R.id.boxBitrate);
         seekBitrate = findViewById(R.id.seekBitrate);
+        btnCancel = findViewById(R.id.btnCancel);
         btnStart = findViewById(R.id.btnStart);
 
         lytWarping = findViewById(R.id.lytWarping);
@@ -229,6 +224,7 @@ public class MainActivity extends AppCompatActivity {
         txtFramerate = findViewById(R.id.txtFramerate);
         txtBitrate = findViewById(R.id.txtBitrate);
         txtTimeleft = findViewById(R.id.txtTimeLeft);
+        btnWarpingWatch = findViewById(R.id.btnWarpingWatch);
         btnHalt = findViewById(R.id.btnHalt);
 
         progWarp = findViewById(R.id.progWarp);
@@ -245,7 +241,6 @@ public class MainActivity extends AppCompatActivity {
         btnWatch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                lytMain.setVisibility(View.GONE);
                 Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
                 startActivityForResult(intent, VSL_WATCH);
             }
@@ -257,9 +252,10 @@ public class MainActivity extends AppCompatActivity {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinWarpType.setAdapter(adapter);
         spinWarpType.setOnItemSelectedListener(new Spinner.OnItemSelectedListener() {
-            @Override public void onItemSelected(AdapterView p, View v, int pos, long id) { /*spinnerPos = pos;*/ }
+            @Override public void onItemSelected(AdapterView p, View v, int pos, long id) { warpType = pos; }
             @Override public void onNothingSelected(AdapterView p) { }
         });
+        if (warpType != -1) spinWarpType.setSelection(warpType);
 
         // seconds slider
         seekSeconds.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -300,6 +296,15 @@ public class MainActivity extends AppCompatActivity {
             @Override public void onStopTrackingTouch(SeekBar seekBar) { }
         });
 
+        btnCancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                decPath = null;
+                lytWarp.setVisibility(View.GONE);
+                lytMain.setVisibility(View.VISIBLE);
+            }
+        });
+
         btnStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -311,13 +316,21 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
 
+                progWarp.setProgress(0);
                 startWarpService();
 
                 decPath = null; // gui state based on this
                 handle.obtainMessage(HNDL_HIDE_KEYBOARD, lytWarp).sendToTarget();
                 lytWarp.setVisibility(View.GONE);
                 lytWarping.setVisibility(View.VISIBLE);
-                progWarp.setVisibility(View.VISIBLE);
+            }
+        });
+
+        btnWarpingWatch.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
+                startActivityForResult(intent, VSL_WATCH);
             }
         });
 
@@ -396,17 +409,19 @@ public class MainActivity extends AppCompatActivity {
             txtBitrate.setText(_instance.args.bitrate + "");
         }
 
-        long elapsed = _instance.lastBatchTime - _instance.birth;
-        float prog = (float) _instance.lastBatchFrame / _instance.anticipatedBatchFrames;
-        if (prog == 0) txtTimeleft.setText("Calculating...");
-        else {
-            float remaining = (elapsed / prog) - (System.currentTimeMillis() - _instance.birth);
-            int hours = (int) Math.floor(remaining / 3600000);
-            remaining -= hours * 3600000;
-            int min = (int) Math.floor(remaining / 60000);
-            remaining -= min * 60000;
-            int sec = (int) Math.floor(remaining / 1000);
-            txtTimeleft.setText(String.format("%02d", hours) + ":" + String.format("%02d", min) + ":" + String.format("%02d", sec));
+        if (_instance.anticipatedVideoDuration != 0) {
+            long elapsed = _instance.lastBatchFrameTime - _instance.birth;
+            float prog = (float) _instance.encodedLength / _instance.anticipatedVideoDuration;
+            if (prog == 0) txtTimeleft.setText("Calculating...");
+            else {
+                float remaining = (elapsed / prog) - (System.currentTimeMillis() - _instance.birth);
+                int hours = (int) Math.floor(remaining / 3600000);
+                remaining -= hours * 3600000;
+                int min = (int) Math.floor(remaining / 60000);
+                remaining -= min * 60000;
+                int sec = (int) Math.floor(remaining / 1000);
+                txtTimeleft.setText(String.format("%02d", hours) + ":" + String.format("%02d", min) + ":" + String.format("%02d", sec));
+            }
         }
     }
 

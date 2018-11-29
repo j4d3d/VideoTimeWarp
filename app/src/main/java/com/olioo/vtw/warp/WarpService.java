@@ -42,9 +42,9 @@ public class WarpService extends Service {
     public Timer heartbeat;
     public long birth = -1;
 
-    public long lastBatchTime = 0;
-    public int anticipatedBatchFrames = 0;
-    public int lastBatchFrame = 0;
+    public long lastBatchFrameTime = 0; // real world time of last encoded batchframe
+    public long encodedLength = 0; // video-time of last encoded batchframe
+    public long anticipatedVideoDuration = 0; // video duration + amount
 
     @Override
     public void onCreate() {

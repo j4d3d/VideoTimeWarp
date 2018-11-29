@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.0.2] - 2018-11-28
+### Added
+- Progress bar style
+- btnCancel to lytWarp
+- btnWarpingWatch to lytWarping
+
+### Changed
+- Progress bar now a part of lytWarping
+- Estimated time remaining now based on encoded video length
+
+### Fixed
+- ScrollViews scale to fit and anchor to bottom
+- GUI-selected WarpType no longer resets between warps
+
 ## [0.0.1] - 2018-11-26
 ### Added
 - CHANGELOG.md

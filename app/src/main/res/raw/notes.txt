@@ -37,12 +37,20 @@ optimizations:
     - reduce if-statements?
  - seeking and batchsize are the real limiters, though.
 
+Shitty MVP todo list:
+ - Watermark
+ - Handle video orientation by rotating the UV coords in TextureRender
+ - Test on AWS
+ - Cancel button on lytWarp
+ - Watch button on lytWarping
+
+
  Left to be done (ordered by estimated difficulty):
  - Smooth edges of warp head/tail
+    - It seems that the frames are wrapping on the boundaries when we get the hard edges
  - "Trim video"/"Pad video" toggle switch
     - Warning if video too short and not trimming either
  - Failsafe to end warping if just spinning for ~10min
- - Handle video orientation by rotating the UV coords in TextureRender
     - Can even hardcode in the shader when building it
  - Time stretching (should not be hard at all)
  - "Judder" may be a result of frames not drained when shifting batch
