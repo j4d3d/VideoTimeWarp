@@ -55,8 +55,10 @@ public class Warper extends AndroidTestCase {
     boolean extractorReachedEnd = false;
     boolean encoderOutputAvailable, decoderOutputAvailable;
     int currentFrame = 0;
+    float startOffset, endPad; // for trimEnds setting
     // batch stuff
     boolean encodingBatch = false;
+    boolean justOneBatch = false; // set to true if only one batch will be rendered
     long drainOlderThan = -1;
     int batchEncodeProg = 0, batchFloor = 0;
     public int batchSize = 16;
@@ -64,6 +66,10 @@ public class Warper extends AndroidTestCase {
     public Warper(WarpArgs args) {
         self = this;
         Warper.args = args;
+
+        // padding frame variables, dependent on swtTrimEnds in lytWarp
+        startOffset = (args.trimStart) ? args.amount : 0f;
+        endPad = (args.trimEnd) ? 0f : args.amount;
 
         try {
             extractor = new MediaExtractor();
@@ -214,20 +220,20 @@ public class Warper extends AndroidTestCase {
 
                         // ~~~ ONFRAME ~~~
 
-                        float bceilTime = (batchFloor + batchSize - 1) * 1000000L / args.frameRate;
+                        float bceilTime = (batchFloor + batchSize - 1) * 1000000L / args.frameRate + startOffset;
                         float lframeTime = frameTimes.get(Math.max(0, currentFrame-1));
                         float nframeTime = frameTimes.get(Math.min(currentFrame+1, frameTimes.size()-2));
                         float cframeTime = frameTimes.get(currentFrame);
 
                         if (lframeTime <= bceilTime)
                             for (int i=0; i<batchSize; i++) {
-                                float bframeTime = (batchFloor + i) * 1000000f / args.frameRate;
+                                float bframeTime = (batchFloor + i) * 1000000f / args.frameRate + startOffset;
                                 float pframeTime = bframeTime - args.amount;
-                                if (lframeTime > bframeTime) continue;
+                                if (lframeTime > bframeTime) continue; // todo: || nframeTime < pframeTime, or something?
                                 float clearTime = Math.max(pframeTime, frameTimes.get(0));
                                 boolean clear = cframeTime <= clearTime && nframeTime > clearTime;
                                 if (clear)
-                                    if (true || VERBOSE) Log.d(TAG, "Clearing bframe: "+(batchFloor+i)+" @ bftime: "+bframeTime+" & cftime: "+cframeTime+" & ptime: "+pframeTime);
+                                    if (VERBOSE) Log.d(TAG, "Clearing bframe: "+(batchFloor+i)+" @ bftime: "+bframeTime+" & cftime: "+cframeTime+" & ptime: "+pframeTime);
                                 outputSurface.drawOnBatchImage(
                                     i,
                                     lframeTime - pframeTime,
@@ -262,10 +268,15 @@ public class Warper extends AndroidTestCase {
         int batchFrame = batchFloor + batchEncodeProg;
         long batchTime = batchFrame * 1000000000L / args.frameRate;
         // halt warper if we've made it far enough
-        if (batchTime / 1000 > frameTimes.get(frameTimes.size() - 2) + args.amount) {
-            halt = true;
-            encodingBatch = false;
-            return;
+        if (!justOneBatch && batchTime / 1000 > frameTimes.get(frameTimes.size() - 2) - startOffset + endPad ) {
+            // if nothing encoded yet, set to just encode what we have in batch frames.
+            // that'll teach em to trimEnds with warp amounts greater than the video duration...
+            if (batchFloor == 0) justOneBatch = true;
+            else {
+                halt = true;
+                encodingBatch = false;
+                return;
+            }
         }
 
         if (VERBOSE) Log.d(TAG, "Encoding batch at frame: "+(batchFrame)+", "+batchTime);
@@ -279,13 +290,24 @@ public class Warper extends AndroidTestCase {
         WarpService.instance.lastBatchFrameTime = System.currentTimeMillis();
 
         if (batchEncodeProg == batchSize) {
+            // end of justOneBatch? halt!
+            if (justOneBatch) {
+                halt = true;
+                encodingBatch = false;
+                MainActivity.handle.obtainMessage(
+                    MainActivity.HNDL_TOAST,
+                    "Try using a shorter warp amount, or disabling 'Trim Start/End'."
+                ).sendToTarget();
+                return;
+            }
+
             // increment bfloor and reset batch controller state
             batchFloor += batchSize;
             encodingBatch = false;
             batchEncodeProg = 0;
             // seek
             extractorReachedEnd = false;
-            long time = Math.max(0, (long)(batchFloor * 1000000L / args.frameRate - args.amount));
+            long time = Math.max(0, (long)(batchFloor * 1000000L / args.frameRate - args.amount + startOffset));
             if (VERBOSE) Log.d(TAG, "Seeking to time: "+batchFloor+", at time: "+time);
             extractor.seekTo(time, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
             // what frame did we land on

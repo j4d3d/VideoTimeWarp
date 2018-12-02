@@ -97,11 +97,12 @@ public class MainActivity extends AppCompatActivity {
                     case HNDL_WARP_DONE:
                         Log.d(TAG, "Warp done!");
                         stopWarpService();
-                        outPath = msg.obj+"";
-                        videoView.setVideoURI(Uri.parse(outPath));
-                        videoView.start();
-                        lytMain.setVisibility(View.VISIBLE);
-                        lytWarping.setVisibility(View.GONE);
+                        if (msg.obj != null) {
+                            outPath = msg.obj+"";
+                            videoView.setVideoURI(Uri.parse(outPath));
+                            videoView.start();
+                        }
+                        guiByState();
                         break;
                     //case HNDL_WATCH_VID: break;
                     case HNDL_HIDE_KEYBOARD:
@@ -123,6 +124,14 @@ public class MainActivity extends AppCompatActivity {
             public void onCompletion(MediaPlayer mediaPlayer) {
 //                mediaPlayer.reset();
                 mediaPlayer.start();
+            }
+        });
+
+        videoView.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+            @Override
+            public boolean onError(MediaPlayer mp, int what, int extra) {
+                handle.obtainMessage(HNDL_TOAST, "This video can't be played.").sendToTarget();
+                return true; // don't show the "can't play this video" message
             }
         });
 
@@ -172,6 +181,7 @@ public class MainActivity extends AppCompatActivity {
     public Switch swtInvert;
     public jEditText boxSeconds;
     public SeekBar seekSeconds;
+    public Switch swtTrimEnds;
     public jEditText boxScale;
     public SeekBar seekScale;
     public jEditText boxFramerate;
@@ -211,6 +221,7 @@ public class MainActivity extends AppCompatActivity {
         swtInvert = findViewById(R.id.swtInvert);
         boxSeconds = findViewById(R.id.boxSeconds);
         seekSeconds = findViewById(R.id.seekSeconds);
+        swtTrimEnds = findViewById(R.id.swtTrimEnds);
         boxScale = findViewById(R.id.boxScale);
         seekScale = findViewById(R.id.seekScale);
         boxFramerate = findViewById(R.id.boxFramerate);
@@ -348,6 +359,7 @@ public class MainActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
                 lytWarping.setVisibility(View.GONE);
+                lytMain.setVisibility(View.VISIBLE);
             }
         });
 
@@ -518,6 +530,7 @@ public class MainActivity extends AppCompatActivity {
         serviceIntent.putExtra("warpTypeExtra", spinWarpType.getSelectedItemPosition());
         serviceIntent.putExtra("invertExtra", swtInvert.isChecked());
         serviceIntent.putExtra("secondsExtra", Float.parseFloat(boxSeconds.getText()+"")*1000000);
+        serviceIntent.putExtra("trimEndsExtra", swtTrimEnds.isChecked());
         serviceIntent.putExtra("scaleExtra", Float.parseFloat(boxScale.getText()+""));
         serviceIntent.putExtra("framerateExtra", Integer.parseInt(boxFramerate.getText()+""));
         serviceIntent.putExtra("bitrateExtra", Integer.parseInt(boxBitrate.getText()+""));

@@ -63,6 +63,7 @@ public class WarpService extends Service {
         args.warpType = intent.getIntExtra("warpTypeExtra", 0);
         args.invertWarp = intent.getBooleanExtra("invertExtra", false);
         args.amount = intent.getFloatExtra("secondsExtra", 1f); // 1 microsecond lol
+        args.trimStart = args.trimEnd = intent.getBooleanExtra("trimEndsExtra", false);
         args.scale = intent.getFloatExtra("scaleExtra", 1f);
         args.frameRate = intent.getIntExtra("framerateExtra", 0);
         args.bitrate = intent.getIntExtra("bitrateExtra", 1);
@@ -96,9 +97,6 @@ public class WarpService extends Service {
 
         startWarp();
 
-        //do heavy work on a background thread
-        //stopSelf();
-
         return START_NOT_STICKY;
     }
 
@@ -122,21 +120,35 @@ public class WarpService extends Service {
                 } catch (Exception e) { e.printStackTrace(); }
                 finally { warper.release(); }
 
-                // mediascan the file afterwards
+                String warpDonePath = args.encodePath;
+
+                // mediascan the file afterwards, or delete if nothing encoded
                 File file = new File(args.encodePath);
-                MediaScannerConnection.scanFile(
+                boolean exists = file.exists();
+                if (!exists || encodedLength == 0) {
+                    if (exists) {
+                        file.delete();
+                        MainActivity.handle.obtainMessage(MainActivity.HNDL_TOAST, "Nothing encoded, video deleted.").sendToTarget();
+                    } else MainActivity.handle.obtainMessage(MainActivity.HNDL_TOAST, "Nothing encoded.").sendToTarget();
+                    // send WARP_DONE with null encodePath signifying that file was deleted
+                    warpDonePath = null;
+                } else MediaScannerConnection.scanFile(
                         getApplicationContext(),
                         new String[]{file.getAbsolutePath()},
                         null,
                         new MediaScannerConnection.OnScanCompletedListener() {
                             @Override
                             public void onScanCompleted(String path, Uri uri) {
-                                Log.d(TAG, "Scan completed: "+args.encodePath);
-                                MainActivity.handle.obtainMessage(MainActivity.HNDL_WARP_DONE, args.encodePath).sendToTarget();
+                                Log.d(TAG, "Scan completed: " + args.encodePath);
                             }
                         });
 
                 finished = true;
+
+                // set instance to null early for guiFromState() to read
+                instance = null;
+                MainActivity.handle.obtainMessage(MainActivity.HNDL_WARP_DONE, warpDonePath).sendToTarget();
+
                 stopSelf();
             }
         }).start();

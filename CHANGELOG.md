@@ -7,6 +7,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
+- About section with settings glossary (bitrate, framerate, etc.)
+
+## [0.0.4] - 2018-11-30
+### Added
+- "Trim Ends" switch on lytWarp and functionality in Warper
+- Toast tip after warping an end-trimmed video by greater than it's duration
+
+### Fixed
+- Video is deleted if halted before any frames encoded, Toast notifies user
+- Double warning "This video can not be played" is now just toasts, still double I think.
+- GUI disappearance when warp halted before any frames encoded
 
 ## [0.0.3] - 2018-11-29
 ### Added

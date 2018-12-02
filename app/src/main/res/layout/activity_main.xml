@@ -61,7 +61,7 @@
             android:id="@+id/lytWarping"
             android:layout_width="320dp"
             android:layout_height="0dp"
-            android:visibility="visible"
+            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -370,7 +370,7 @@
             android:id="@+id/lytWarp"
             android:layout_width="320dp"
             android:layout_height="0dp"
-            android:visibility="gone"
+            android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -564,6 +564,36 @@
                                 android:inputType="numberDecimal"
                                 android:text="1.0"
                                 android:textAlignment="center" />
+
+                        </RelativeLayout>
+
+                        <RelativeLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:layout_gravity="center_vertical"
+                            android:layout_margin="4dp"
+                            android:background="@android:color/holo_blue_light"
+                            android:orientation="horizontal"
+                            android:padding="4dp"
+                            tools:layout_editor_absoluteX="8dp"
+                            tools:layout_editor_absoluteY="8dp">
+
+                            <TextView
+                                android:id="@+id/textView4"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_alignParentStart="true"
+                                android:layout_weight="1"
+                                android:text="Trim Start/End:"
+                                android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+
+                            <Switch
+                                android:id="@+id/swtTrimEnds"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_alignParentEnd="true"
+                                android:layout_alignParentTop="true"
+                                android:checked="true" />
 
                         </RelativeLayout>
 
