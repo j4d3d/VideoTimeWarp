@@ -14,6 +14,7 @@ import com.olioo.vtw.MainActivity;
 import com.olioo.vtw.bigflake.AndroidTestCase;
 import com.olioo.vtw.bigflake.InputSurface;
 import com.olioo.vtw.bigflake.OutputSurface;
+import com.olioo.vtw.util.Helper;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -27,6 +28,7 @@ public class Warper extends AndroidTestCase {
     public final boolean VERBOSE = true;
     public final boolean WORK_AROUND_BUGS = true;
     public final int TIMEOUT_USEC = 10000;
+    public final int SPINTIMEOUT = 6000; //halt warp if no frame encoded for duration
 
     public static Warper self;
     public static WarpArgs args;
@@ -51,6 +53,7 @@ public class Warper extends AndroidTestCase {
 
     // warper logic
     public boolean halt = false;
+    long spinTime = 0;
     boolean outputDone = false;
     boolean extractorReachedEnd = false;
     boolean encoderOutputAvailable, decoderOutputAvailable;
@@ -131,10 +134,21 @@ public class Warper extends AndroidTestCase {
     }
 
     public void warp() {
+        long lastMS = System.currentTimeMillis();
         while (!outputDone) {
-            if (VERBOSE) Log.d(TAG, "edit loop");
+            // if spintime exceeds SPINTIMEOUT  we halt
+            long thisMS = System.currentTimeMillis();
+            spinTime += thisMS - lastMS;
+            lastMS = thisMS;
+            if (false && spinTime > SPINTIMEOUT) {
+                halt = true;
+                Helper.log(TAG, "Warper has spun for "+SPINTIMEOUT+"ms, timed out.");
+            }
+
+            if (VERBOSE) Helper.log(TAG, "edit loop");
             // Feed more data to the decoder.
             if (!extractorReachedEnd || halt) {
+                spinTime = 0;
                 int inputBufIndex = decoder.dequeueInputBuffer(TIMEOUT_USEC);
                 if (inputBufIndex >= 0) {
                     ByteBuffer inputBuf = decoderInputBuffers[inputBufIndex];
@@ -150,7 +164,7 @@ public class Warper extends AndroidTestCase {
                     if (end) {
                         // End of stream -- send empty frame with EOS flag set.
                         decoder.queueInputBuffer(inputBufIndex, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-                        if (VERBOSE) Log.d(TAG, "sent input EOS");
+                        if (VERBOSE) Helper.log(TAG, "sent input EOS");
                         encodingBatch = true;
 
                     } else {
@@ -159,15 +173,14 @@ public class Warper extends AndroidTestCase {
                         decoder.queueInputBuffer(inputBufIndex, 0, chunkSize, extractor.getSampleTime(), 0 /*flags*/);
                         extractor.advance();
                     }
-                } else if (VERBOSE) Log.d(TAG, "input buffer not available");
+                } else if (VERBOSE) Helper.log(TAG, "input buffer not available");
             }
 
             // Assume output is available.  Loop until both assumptions are false.
             decoderOutputAvailable = encoderOutputAvailable = true;
             while (decoderOutputAvailable || encoderOutputAvailable) {
-
                 // Drain encoder
-                while (drainEncoder());
+                while (!halt && drainEncoder()) ;
 
                 // Encode a batch frame and continue if encodingBatch
                 if (!halt && encodingBatch) {
@@ -180,25 +193,26 @@ public class Warper extends AndroidTestCase {
                 int decoderStatus = decoder.dequeueOutputBuffer(info, TIMEOUT_USEC);
                 if (decoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
                     // no output available yet
-                    if (VERBOSE) Log.d(TAG, "no output from decoder available");
+                    if (VERBOSE) Helper.log(TAG, "no output from decoder available");
                     decoderOutputAvailable = false;
                 } else if (decoderStatus == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
                     //decoderOutputBuffers = decoder.getOutputBuffers();
-                    if (VERBOSE) Log.d(TAG, "decoder output buffers changed (we don't care)");
+                    if (VERBOSE) Helper.log(TAG, "decoder output buffers changed (we don't care)");
                 } else if (decoderStatus == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                     // expected before first buffer of data
                     MediaFormat newFormat = decoder.getOutputFormat();
-                    if (VERBOSE) Log.d(TAG, "decoder output format changed: " + newFormat);
+                    if (VERBOSE) Helper.log(TAG, "decoder output format changed: " + newFormat);
                 } else if (decoderStatus < 0) {
                     throw new RuntimeException("unexpected result from decoder.dequeueOutputBuffer: "+decoderStatus);
                 } else { // decoderStatus >= 0
-                    if (VERBOSE) Log.d(TAG, "surface decoder given buffer "
+                    spinTime = 0;
+                    if (VERBOSE) Helper.log(TAG, "surface decoder given buffer "
                             + decoderStatus + " (size=" + info.size + ")");
 
                     boolean doRender = (info.size != 0);
                     decoder.releaseOutputBuffer(decoderStatus, doRender);
                     if (doRender) {
-                        if (VERBOSE) Log.d(TAG, "currentFrame: "+currentFrame+", ptime: "+info.presentationTimeUs);
+                        if (VERBOSE) Helper.log(TAG, "currentFrame: "+currentFrame+", ptime: "+info.presentationTimeUs);
 
                         // track progress
                         if (MainActivity.handle != null)
@@ -206,7 +220,7 @@ public class Warper extends AndroidTestCase {
                                 float prog = (float)info.presentationTimeUs / frameTimes.get(frameTimes.size()-2);
                                 MainActivity.handle.obtainMessage(MainActivity.HNDL_UPDATE_PROGRESS, (int)(10000*prog)).sendToTarget();
                             } catch (NullPointerException e) {
-                                if (VERBOSE) Log.d(TAG, "MainActivity.handle became null as we sent it a message.");
+                                if (VERBOSE) Helper.log(TAG, "MainActivity.handle became null as we sent it a message.");
                             }
 
                         // This waits for the image and renders it after it arrives.
@@ -233,7 +247,7 @@ public class Warper extends AndroidTestCase {
                                 float clearTime = Math.max(pframeTime, frameTimes.get(0));
                                 boolean clear = cframeTime <= clearTime && nframeTime > clearTime;
                                 if (clear)
-                                    if (VERBOSE) Log.d(TAG, "Clearing bframe: "+(batchFloor+i)+" @ bftime: "+bframeTime+" & cftime: "+cframeTime+" & ptime: "+pframeTime);
+                                    if (VERBOSE) Helper.log(TAG, "Clearing bframe: "+(batchFloor+i)+" @ bftime: "+bframeTime+" & cftime: "+cframeTime+" & ptime: "+pframeTime);
                                 outputSurface.drawOnBatchImage(
                                     i,
                                     lframeTime - pframeTime,
@@ -250,7 +264,7 @@ public class Warper extends AndroidTestCase {
 
                     if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
                         // forward decoder EOS to encoder
-                        if (VERBOSE) Log.d(TAG, "signaling input EOS");
+                        if (VERBOSE) Helper.log(TAG, "signaling input EOS");
                         if (WORK_AROUND_BUGS) {
                             // Bail early, possibly dropping a frame.
                             return;
@@ -279,10 +293,10 @@ public class Warper extends AndroidTestCase {
             }
         }
 
-        if (VERBOSE) Log.d(TAG, "Encoding batch at frame: "+(batchFrame)+", "+batchTime);
+        if (VERBOSE) Helper.log(TAG, "Encoding batch at frame: "+(batchFrame)+", "+batchTime);
         outputSurface.drawImage(batchEncodeProg);
         inputSurface.setPresentationTime(batchTime);
-        if (VERBOSE) Log.d(TAG, "swapBuffers");
+        if (VERBOSE) Helper.log(TAG, "swapBuffers");
         inputSurface.swapBuffers();
         batchEncodeProg++;
         // est. time remaining variables
@@ -308,7 +322,7 @@ public class Warper extends AndroidTestCase {
             // seek
             extractorReachedEnd = false;
             long time = Math.max(0, (long)(batchFloor * 1000000L / args.frameRate - args.amount + startOffset));
-            if (VERBOSE) Log.d(TAG, "Seeking to time: "+batchFloor+", at time: "+time);
+            if (VERBOSE) Helper.log(TAG, "Seeking to time: "+batchFloor+", at time: "+time);
             extractor.seekTo(time, MediaExtractor.SEEK_TO_PREVIOUS_SYNC);
             // what frame did we land on
             long etime = extractor.getSampleTime();
@@ -316,7 +330,7 @@ public class Warper extends AndroidTestCase {
             for (int i=0; i<frameTimes.size(); i++) {
                 if (etime == frameTimes.get(i)) {
                     currentFrame = i;
-                    if (VERBOSE) Log.d(TAG, "sought batchFloor: " + batchFloor + ", currentFrame: " + currentFrame);
+                    if (VERBOSE) Helper.log(TAG, "sought batchFloor: " + batchFloor + ", currentFrame: " + currentFrame);
                     break;
                 }
             }
@@ -331,14 +345,14 @@ public class Warper extends AndroidTestCase {
         int encoderStatus = encoder.dequeueOutputBuffer(info, TIMEOUT_USEC);
         if (encoderStatus == MediaCodec.INFO_TRY_AGAIN_LATER) {
             // no output available yet
-            if (VERBOSE) Log.d(TAG, "no output from encoder available");
+            if (VERBOSE) Helper.log(TAG, "no output from encoder available");
             encoderOutputAvailable = false;
         } else if (encoderStatus == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
             encoderOutputBuffers = encoder.getOutputBuffers();
-            if (VERBOSE) Log.d(TAG, "encoder output buffers changed");
+            if (VERBOSE) Helper.log(TAG, "encoder output buffers changed");
         } else if (encoderStatus == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
             MediaFormat newFormat = encoder.getOutputFormat();
-            if (VERBOSE) Log.d(TAG, "encoder output format changed: " + newFormat);
+            if (VERBOSE) Helper.log(TAG, "encoder output format changed: " + newFormat);
 
             //start muxer now that we have the thing
             if (muxerStarted) throw new RuntimeException("format changed twice");
@@ -354,6 +368,7 @@ public class Warper extends AndroidTestCase {
         } else if (encoderStatus < 0) {
             fail("unexpected result from encoder.dequeueOutputBuffer: " + encoderStatus);
         } else { // encoderStatus >= 0
+            spinTime = 0;
 
             ByteBuffer encodedData = encoderOutputBuffers[encoderStatus];
             if (encodedData == null) {
@@ -364,7 +379,7 @@ public class Warper extends AndroidTestCase {
                 encodedData.position(info.offset);
                 encodedData.limit(info.offset + info.size);
                 muxer.writeSampleData(encoderTrackIndex, encodedData, info);
-                if (VERBOSE) Log.d(TAG, "encoder output " + info.size + " bytes");
+                if (VERBOSE) Helper.log(TAG, "encoder output " + info.size + " bytes");
             }
             outputDone = (info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
             encoder.releaseOutputBuffer(encoderStatus, false);

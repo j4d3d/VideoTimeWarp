@@ -28,6 +28,7 @@ import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.util.Log;
 
+import com.olioo.vtw.util.Helper;
 import com.olioo.vtw.warp.WarpArgs;
 import com.olioo.vtw.warp.WarpService;
 import com.olioo.vtw.warp.Warper;
@@ -327,7 +328,7 @@ public class TextureRender {
             String[] lines = FRAG_SRC.split("\n");
             String o="";
             for (int i=0; i<lines.length; i++) o += "\n"+i+":\t"+lines[i];
-            Log.d(TAG, "FRAG_SRC:"+o);
+            Helper.log(TAG, "FRAG_SRC:"+o);
 //        }
 
         mProgram2 = createProgram(VERTEX_SHADER, FRAG_SRC);
@@ -393,7 +394,7 @@ public class TextureRender {
 //        int sframePixels = Warper.args.decWidth * Warper.args.decHeight;
 //        int bframePixels = Warper.args.outWidth * Warper.args.outHeight;
 //        Warper.self.batchSize = (int)(Math.floor(maxPixels - sframePixels) / bframePixels);
-//        Log.d(TAG, "batchSize: "+Warper.self.batchSize);
+//        Helper.log(TAG, "batchSize: "+Warper.self.batchSize);
 
         // batch vars
         batTexIds = new int[Warper.self.batchSize];

@@ -6,6 +6,7 @@ import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -13,6 +14,9 @@ import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+
+import com.olioo.vtw.BuildConfig;
+import com.olioo.vtw.R;
 
 import java.io.File;
 import java.util.regex.Matcher;
@@ -77,7 +81,7 @@ public class Helper {
 
         //get name
         Matcher mat = FILENAME.matcher(path);
-        if (!mat.matches()) { Log.d("alucard", "sup"); return null; }
+        if (!mat.matches()) { Helper.log("alucard", "sup"); return null; }
         String parentPath = mat.group(1);
         String name = mat.group(2); //pattern removes -//d{3} affix from name
         String extension = mat.group(3);
@@ -118,7 +122,7 @@ public class Helper {
 
     public static void alert(String title, String prompt, Context context) {
 
-//        Log.d("alert: "+title, prompt);
+//        Helper.log("alert: "+title, prompt);
         AlertDialog.Builder builder1 = new AlertDialog.Builder(context);
         builder1.setTitle(title);
         builder1.setMessage(prompt);
@@ -136,7 +140,7 @@ public class Helper {
 
     public static void runOnYes(String prompt, Context context, Runnable runme) { runOnCancel("No", "Yes", prompt, context, runme); }
     public static void runOnCancel(String noBtn, String yesBtn, String prompt, Context context, final Runnable runme) {
-        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(context);
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(context, R.style.DialogTheme);
 
         // set title
         alertDialogBuilder.setTitle(prompt);
@@ -197,6 +201,12 @@ public class Helper {
                 index ++;
             }
         } return yuvFrame;
+    }
+
+    public static void log(String tag, String msg) {
+        if (BuildConfig.DEBUG) {
+            Log.d(tag, msg);
+        }
     }
 
     /*private void showExplanation(String title,

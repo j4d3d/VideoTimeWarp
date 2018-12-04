@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.Log;
 
 import com.olioo.vtw.MainActivity;
+import com.olioo.vtw.util.Helper;
 
 /** my own little class to satisfy bigflake unit testing dependency,
  * leaving DecodeEditEncodeTest relatively unedited from original */
@@ -12,7 +13,7 @@ public class AndroidTestCase {
 
     public void fail() { fail("default"); }
     public void fail(String msg) {
-        Log.d("FAIL!", msg);
+        Helper.log("FAIL!", msg);
     }
 
     public void assertTrue(boolean bool) {

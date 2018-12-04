@@ -20,6 +20,7 @@ import android.widget.Toast;
 
 import com.olioo.vtw.MainActivity;
 import com.olioo.vtw.R;
+import com.olioo.vtw.util.Helper;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -49,7 +50,7 @@ public class WarpService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d(TAG, "OnCreate");
+        Helper.log(TAG, "OnCreate");
         instance = this;
     }
 
@@ -59,7 +60,7 @@ public class WarpService extends Service {
 
         args.decodePath = intent.getStringExtra("decodePathExtra");
         args.filename = intent.getStringExtra("filenameExtra");
-        args.encodePath = Environment.getExternalStorageDirectory()+"/"+args.filename;
+        args.encodePath = MainActivity.folderPath+args.filename;
         args.warpType = intent.getIntExtra("warpTypeExtra", 0);
         args.invertWarp = intent.getBooleanExtra("invertExtra", false);
         args.amount = intent.getFloatExtra("secondsExtra", 1f); // 1 microsecond lol
@@ -90,7 +91,7 @@ public class WarpService extends Service {
         heartbeat.schedule(new TimerTask() {
             @Override
             public void run() {
-                Log.d(TAG, "Wizrd: "+((System.currentTimeMillis()-birth)/1000f));
+                Helper.log(TAG, "Wizrd: "+((System.currentTimeMillis()-birth)/1000f));
 //                if (System.currentTimeMillis() - birth > 5000) stopForegroundService();
             }
         }, 1000, 1000);
@@ -106,13 +107,17 @@ public class WarpService extends Service {
             public void run() {
                 started = true;
 
+                // check if folder exists, if not, create it
+                File folder = new File(MainActivity.folderPath);
+                if (!folder.exists()) folder.mkdir();
+
                 // delete old video at this path if it exists
                 new File(args.encodePath).delete();
 
                 try {
                     // warp args that must be profiled
                     args.profileDecodee(args.decodePath);
-                    Log.d("WarpArgs", args.print());
+                    Helper.log("WarpArgs", args.print());
 
                     // create warper and use it
                     warper = new Warper(args);
@@ -120,7 +125,7 @@ public class WarpService extends Service {
                 } catch (Exception e) { e.printStackTrace(); }
                 finally { warper.release(); }
 
-                String warpDonePath = args.encodePath;
+                String warpDonePath = args.encodePath; // gets set to null if aborted
 
                 // mediascan the file afterwards, or delete if nothing encoded
                 File file = new File(args.encodePath);
@@ -139,7 +144,7 @@ public class WarpService extends Service {
                         new MediaScannerConnection.OnScanCompletedListener() {
                             @Override
                             public void onScanCompleted(String path, Uri uri) {
-                                Log.d(TAG, "Scan completed: " + args.encodePath);
+                                Helper.log(TAG, "Scan completed: " + args.encodePath);
                             }
                         });
 
@@ -188,7 +193,7 @@ public class WarpService extends Service {
 
     @Override
     public void onDestroy() {
-        Log.d(TAG, "OnDestroy()");
+        Helper.log(TAG, "OnDestroy()");
         heartbeat.purge();
         heartbeat.cancel();
         instance = null;

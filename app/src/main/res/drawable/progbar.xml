@@ -5,7 +5,7 @@
         <shape android:shape="rectangle">
             <corners android:radius="2dp" />
             <size android:height="8dp" />
-            <solid android:color="?attr/colorControlNormal" />
+            <solid android:color="@color/progNormal" />
         </shape>
     </item>
     <item android:id="@android:id/progress"
@@ -14,7 +14,7 @@
             <shape android:shape="rectangle">
                 <corners android:radius="2dp" />
                 <size android:height="8dp" />
-                <solid android:color="?attr/colorControlActivated" />
+                <solid android:color="@color/progActivated" />
             </shape>
         </scale>
     </item>

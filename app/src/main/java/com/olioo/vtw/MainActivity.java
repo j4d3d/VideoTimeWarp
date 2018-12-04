@@ -55,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
     public static final int VSL_WATCH = 1;
 
     public static Handler handle;
+    public static String folderPath = Environment.getExternalStorageDirectory() + "/Time Warped/";
 
     // these vars determine state, and must be set to null when non applicable
     static String decPath = null;
@@ -95,7 +96,7 @@ public class MainActivity extends AppCompatActivity {
 //                    case HNDL_PREVIEW_BMP: imageView.setImageBitmap((Bitmap)msg.obj); break;
                     case HNDL_UPDATE_PROGRESS: progWarp.setProgress((int)msg.obj); break;
                     case HNDL_WARP_DONE:
-                        Log.d(TAG, "Warp done!");
+                        Helper.log(TAG, "Warp done!");
                         stopWarpService();
                         if (msg.obj != null) {
                             outPath = msg.obj+"";
@@ -114,7 +115,7 @@ public class MainActivity extends AppCompatActivity {
                         Toast.makeText(context, (String)msg.obj, Toast.LENGTH_LONG).show();
                     case HNDL_UPDATE_GUI:
                         updateLytWarping(true); break;
-                    default: Log.d("unhandled message", msg.what+"\t"+msg.obj); break;
+                    default: Helper.log("unhandled message", msg.what+"\t"+msg.obj); break;
                 }
             }
         };
@@ -135,17 +136,19 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        Log.d(TAG, "Instance: "+WarpService.instance);
+        Helper.log(TAG, "Instance: "+WarpService.instance);
         if (outPath != null) {
-            boolean notOverwriting = true;
-            if (WarpService.instance != null) {
-                File a = new File(WarpService.instance.args.encodePath);
-                File b = new File(outPath);
-                if (a.getAbsolutePath().equals(b.getAbsolutePath())) notOverwriting = false;
-            }
-            if (notOverwriting) {
-                videoView.setVideoURI(Uri.parse(outPath));
-                videoView.start();
+            File b = new File(outPath);
+            if (b.exists()) {
+                boolean notOverwriting = true;
+                if (WarpService.instance != null) {
+                    File a = new File(WarpService.instance.args.encodePath);
+                    if (a.getAbsolutePath().equals(b.getAbsolutePath())) notOverwriting = false;
+                }
+                if (notOverwriting) {
+                    videoView.setVideoURI(Uri.parse(outPath));
+                    videoView.start();
+                }
             }
         }
     }
@@ -275,7 +278,9 @@ public class MainActivity extends AppCompatActivity {
 
         // seconds slider
         seekSeconds.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) { boxSeconds.setText(""+(progress/1000f)); }
+            @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                boxSeconds.setText(String.format("%.2f", Math.pow(progress/10000f, 2)*25));
+            }
             @Override public void onStartTrackingTouch(SeekBar seekBar) { }
             @Override public void onStopTrackingTouch(SeekBar seekBar) { }
         });
@@ -284,7 +289,7 @@ public class MainActivity extends AppCompatActivity {
         seekScale.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 float scale = progress/10000f;
-                boxScale.setText(""+(scale));
+                boxScale.setText(String.format("%.2f", scale));
                 updateBoxBitrate();
             }
             @Override public void onStartTrackingTouch(SeekBar seekBar) { }
@@ -295,7 +300,7 @@ public class MainActivity extends AppCompatActivity {
         seekFramerate.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 int framerate = 1 + Math.round(progress/10000f*59);
-                boxFramerate.setText(""+(framerate));
+                boxFramerate.setText(""+framerate);
 //                updateBoxBitrate();
             }
             @Override public void onStartTrackingTouch(SeekBar seekBar) { }
@@ -326,19 +331,31 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 // check that decPath does match encPath
                 File a = new File(decPath);
-                File b = new File(Environment.getExternalStorageDirectory()+"/"+boxFileName.getText()+".mp4");
+                File b = new File(MainActivity.folderPath+boxFileName.getText()+".mp4");
                 if (a.getAbsolutePath().equals(b.getAbsolutePath())) {
                     handle.obtainMessage(HNDL_TOAST, "Can not overwrite source video, please change Filename.").sendToTarget();
                     return;
                 }
 
-                progWarp.setProgress(0);
-                startWarpService();
+                Runnable doit = new Runnable() {
+                    @Override
+                    public void run() {
+                        progWarp.setProgress(0);
+                        startWarpService();
 
-                decPath = null; // gui state based on this
-                handle.obtainMessage(HNDL_HIDE_KEYBOARD, lytWarp).sendToTarget();
-                lytWarp.setVisibility(View.GONE);
-                lytWarping.setVisibility(View.VISIBLE);
+                        decPath = null; // gui state based on this
+                        handle.obtainMessage(HNDL_HIDE_KEYBOARD, lytWarp).sendToTarget();
+                        lytWarp.setVisibility(View.GONE);
+                        lytWarping.setVisibility(View.VISIBLE);
+                    }
+                };
+
+                // warn if overwriting anything
+                if (b.exists()) Helper.runOnYes(
+                        "Are you sure you want to overwrite " + boxFileName.getText() + ".mp4?",
+                        MainActivity.this,
+                        doit);
+                else doit.run();
             }
         });
 
@@ -353,13 +370,23 @@ public class MainActivity extends AppCompatActivity {
         btnHalt.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                try { // instance may become null at any moment
-                    WarpService.instance.warper.halt = true;
-                } catch (NullPointerException e) {
-                    e.printStackTrace();
-                }
-                lytWarping.setVisibility(View.GONE);
-                lytMain.setVisibility(View.VISIBLE);
+                Runnable doit = new Runnable() {
+                    @Override
+                    public void run() {
+                        try { // instance may become null at any moment
+                            WarpService.instance.warper.halt = true;
+                        } catch (NullPointerException e) {
+                            e.printStackTrace();
+                        }
+                        lytWarping.setVisibility(View.GONE);
+                        lytMain.setVisibility(View.VISIBLE);
+                    }
+                };
+
+                Helper.runOnYes(
+                        "Are you sure you want to halt warping at "+String.format("%.2f", (WarpService.instance.encodedLength/1000000f))+" seconds?",
+                        MainActivity.this,
+                        doit);
             }
         });
 
@@ -436,8 +463,8 @@ public class MainActivity extends AppCompatActivity {
             // update warping GUI
             txtFilename.setText(_instance.args.filename);
             txtWarptype.setText(getResources().getStringArray(R.array.warp_modes)[_instance.args.warpType]);
-            txtSeconds.setText(String.format("%.4f", (_instance.args.amount / 1000000f)));
-            txtScale.setText(String.format("%.4f", _instance.args.scale));
+            txtSeconds.setText(String.format("%.2f", (_instance.args.amount / 1000000f)));
+            txtScale.setText(String.format("%.2f", _instance.args.scale));
             txtFramerate.setText(""+_instance.args.frameRate);
             txtBitrate.setText(_instance.args.bitrate + "");
         }
@@ -481,12 +508,12 @@ public class MainActivity extends AppCompatActivity {
                                 if (WarpService.instance != null && WarpService.instance.started && !WarpService.instance.finished)
                                     WarpService.instance.warper.halt = true;
                             } catch (NullPointerException e) {
-                                Log.d(TAG, "WarpService.instance became null as warper.halt set to true. No harm done.");
+                                Helper.log(TAG, "WarpService.instance became null as warper.halt set to true. No harm done.");
                             }
 
                             // wait for service to finish
                             while (WarpService.instance != null) try {
-                                Log.d(TAG, "Waiting for Warper to be halted...");
+                                Helper.log(TAG, "Waiting for Warper to be halted...");
                                 Thread.sleep(100);
                             } catch (Exception e) {
                                 e.printStackTrace();
@@ -543,6 +570,7 @@ public class MainActivity extends AppCompatActivity {
         txtWarptype.setText(getResources().getStringArray(R.array.warp_modes)[spinWarpType.getSelectedItemPosition()]);
         txtSeconds.setText(boxSeconds.getText());
         txtScale.setText(boxScale.getText());
+        txtFramerate.setText(boxFramerate.getText());
         txtBitrate.setText(boxBitrate.getText());
         txtTimeleft.setText("Who knows?");
     }

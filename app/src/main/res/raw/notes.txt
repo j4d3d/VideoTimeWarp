@@ -39,19 +39,10 @@ optimizations:
 
 Shitty MVP todo list:
  - Watermark
- - Handle video orientation by rotating the UV coords in TextureRender
- - Test on AWS
- - Cancel button on lytWarp
- - Watch button on lytWarping
-
 
  Left to be done (ordered by estimated difficulty):
  - Smooth edges of warp head/tail
     - It seems that the frames are wrapping on the boundaries when we get the hard edges
- - "Trim video"/"Pad video" toggle switch
-    - Warning if video too short and not trimming either
- - Failsafe to end warping if just spinning for ~10min
-    - Can even hardcode in the shader when building it
  - Time stretching (should not be hard at all)
  - "Judder" may be a result of frames not drained when shifting batch
 
@@ -71,6 +62,10 @@ Shitty MVP todo list:
  x Add VTW icon
  x Black padding frames on beginning and end
  x Framerate slider
+ x Failsafe to end warping if just spinning for ~10min
+ x "Trim video"/"Pad video" toggle switch
+    x Toast tip if video too short and trimmed (after the vid finishes and is playing)
+
 
 
  GUI crashes to handle?:

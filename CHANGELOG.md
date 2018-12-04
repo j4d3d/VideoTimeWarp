@@ -8,6 +8,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 - About section with settings glossary (bitrate, framerate, etc.)
+- Fix frame-jump
+- Fix occasional exclusion of first/last frames from batch
+
+## [0.0.5] - 2018-12-03
+### Added
+- Warning when overwriting video
+- Warning when halting Warper
+- SpinTimer logic to prevent infinite spinning of Warper, currently flawed and disabled
+- Save all vids in a "Time Warped" folder
+
+### Changed
+- Enabled minify for release builds
+- seekAmount (seconds) now on exponential scale
+- GUI Sliders now round to nearest hundredth
+- Log.d calls wrapped in function that does nothing when BuildConfig.DEBUG
+
+### Fixed
+- VideoPlayer now checks if file exists before trying to play it
+- Helper runOnYes/Cancel methods needed a dialog theme
 
 ## [0.0.4] - 2018-11-30
 ### Added

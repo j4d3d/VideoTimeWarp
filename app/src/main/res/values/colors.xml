@@ -4,4 +4,7 @@
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
     <color name="holoDarker">#0088B5</color>
+
+    <color name="progActivated">#FF4081</color>
+    <color name="progNormal">#441020</color>
 </resources>

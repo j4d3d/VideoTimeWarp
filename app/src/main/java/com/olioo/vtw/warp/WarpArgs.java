@@ -80,7 +80,7 @@ public class WarpArgs {
         for (int i = 0; i < samples; i++) {
             extractor.advance();
             long st = extractor.getSampleTime();
-//            Log.d("MAURO", st+"\t"+(st-lt));
+//            Helper.log("MAURO", st+"\t"+(st-lt));
             lt = st;
         } decFrameRate = 1000000 / lt * samples;
         maxTimeFactor = 60 / decFrameRate;

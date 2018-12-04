@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">VTW</string>
+    <string name="app_name">Video Time Warp</string>
 
     <string-array name="warp_modes">
         <item>Vertical</item>

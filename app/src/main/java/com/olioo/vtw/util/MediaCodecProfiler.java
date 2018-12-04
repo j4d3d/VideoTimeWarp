@@ -30,14 +30,14 @@ public class MediaCodecProfiler {
         minSize = ceil;
 
 
-//        while (!validSize(minSize+=16)) ;//Log.d("trySize", minSize+""); //could make this much more efficient if its too much
+//        while (!validSize(minSize+=16)) ;//Helper.log("trySize", minSize+""); //could make this much more efficient if its too much
 //        minSize += 8;
-//        Log.d("minSize", minSize+"");
+//        Helper.log("minSize", minSize+"");
 
-//        Log.d("vbrate", "Max Int\t"+Integer.MAX_VALUE);
+//        Helper.log("vbrate", "Max Int\t"+Integer.MAX_VALUE);
 //        for (int i = 0; i < 100; i++) {
 //            int rate = 1 << i;
-//            Log.d("vbrate", i+"\t"+rate+"\t"+validBitrate(rate));
+//            Helper.log("vbrate", i+"\t"+rate+"\t"+validBitrate(rate));
 //        }
 
     }
