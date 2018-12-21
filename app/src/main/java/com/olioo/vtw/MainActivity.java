@@ -50,9 +50,11 @@ public class MainActivity extends AppCompatActivity {
     public static final int HNDL_HIDE_KEYBOARD = 3;
     public static final int HNDL_TOAST = 4;
     public static final int HNDL_UPDATE_GUI = 5;
+    public static final int HNDL_RUNNABLE = 6;
 
     public static final int VSL_WARP = 0;
     public static final int VSL_WATCH = 1;
+
 
     public static Handler handle;
     public static String folderPath = Environment.getExternalStorageDirectory() + "/Time Warped/";
@@ -115,6 +117,9 @@ public class MainActivity extends AppCompatActivity {
                         Toast.makeText(context, (String)msg.obj, Toast.LENGTH_LONG).show();
                     case HNDL_UPDATE_GUI:
                         updateLytWarping(true); break;
+                    case HNDL_RUNNABLE:
+                        ((Runnable)msg.obj).run();
+                        break;
                     default: Helper.log("unhandled message", msg.what+"\t"+msg.obj); break;
                 }
             }
