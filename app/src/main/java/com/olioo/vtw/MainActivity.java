@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -13,6 +14,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.provider.MediaStore;
 import android.support.constraint.ConstraintLayout;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -25,6 +27,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.Spinner;
@@ -55,6 +58,8 @@ public class MainActivity extends AppCompatActivity {
     public static final int VSL_WARP = 0;
     public static final int VSL_WATCH = 1;
 
+    public static final int PERMISSION_WARP = 0;
+    public static final int PERMISSION_WATCH = 1;
 
     public static Handler handle;
     public static String folderPath = Environment.getExternalStorageDirectory() + "/Time Warped/";
@@ -84,10 +89,10 @@ public class MainActivity extends AppCompatActivity {
 
         setupGUI();
 
-        Helper.getPermissions(this, getBaseContext(), new String[]{
+        /*Helper.getPermissions(this, getBaseContext(), new String[]{
                 Manifest.permission.READ_EXTERNAL_STORAGE,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE,
-        });
+        });*/
 
         //create handle
         final Context context = this;
@@ -176,6 +181,8 @@ public class MainActivity extends AppCompatActivity {
 
     Timer guiTimer;
     public ConstraintLayout lytGUI;
+    public LinearLayout lytVideo;
+
     public VideoView videoView;
 
     public ConstraintLayout lytMain;
@@ -215,7 +222,11 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void setupGUI() {
+        final Activity activity = this;
+        final Context context = getBaseContext();
+
         lytGUI = findViewById(R.id.lytGUI);
+        lytVideo = findViewById(R.id.lytVideo);
         videoView = findViewById(R.id.videoView);
 
         lytMain = findViewById(R.id.lytMain);
@@ -256,17 +267,34 @@ public class MainActivity extends AppCompatActivity {
         btnWarp.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                lytMain.setVisibility(View.GONE);
-                Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
-                startActivityForResult(intent, VSL_WARP);
+                boolean granted = Helper.getPermissions(
+                        activity,
+                        context,
+                        new String[]{
+                            Manifest.permission.READ_EXTERNAL_STORAGE,
+                            Manifest.permission.WRITE_EXTERNAL_STORAGE },
+                        PERMISSION_WARP);
+
+                if (granted) {
+                    clickBtnWarp();
+                }
             }
         });
 
         btnWatch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
-                startActivityForResult(intent, VSL_WATCH);
+                boolean granted = Helper.getPermissions(
+                        activity,
+                        context,
+                        new String[]{
+                                Manifest.permission.READ_EXTERNAL_STORAGE,
+                                Manifest.permission.WRITE_EXTERNAL_STORAGE },
+                        PERMISSION_WATCH);
+
+                if (granted) {
+                    clickBtnWatch();
+                }
             }
         });
 
@@ -395,7 +423,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        videoView.setOnTouchListener(new View.OnTouchListener() {
+        lytVideo.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
                 if (lytGUI.getVisibility() == View.VISIBLE)
@@ -505,44 +533,7 @@ public class MainActivity extends AppCompatActivity {
 
             switch (requestCode) {
                 case VSL_WARP:
-                    Runnable runnable = new Runnable() {
-                        @Override
-                        public void run() {
-                            // halt WarpService.instance.warper if exists, catch nullpointer just in case
-                            try {
-                                if (WarpService.instance != null && WarpService.instance.started && !WarpService.instance.finished)
-                                    WarpService.instance.warper.halt = true;
-                            } catch (NullPointerException e) {
-                                Helper.log(TAG, "WarpService.instance became null as warper.halt set to true. No harm done.");
-                            }
-
-                            // wait for service to finish
-                            while (WarpService.instance != null) try {
-                                Helper.log(TAG, "Waiting for Warper to be halted...");
-                                Thread.sleep(100);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-
-                            //path of chosen video
-                            decPath = uriPath;
-
-                            MediaMetadataRetriever mmr = new MediaMetadataRetriever();
-                            mmr.setDataSource(decPath);
-                            // todo: does this ever return null?
-                            decBitrate = (int)Long.parseLong(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE));
-                            float scale = Float.parseFloat(boxScale.getText()+"");
-                            boxBitrate.setText(""+(int)(seekBitrate.getProgress()/10000f*decBitrate*1.2f*scale*scale));
-
-                            //show warp window
-                            lytWarp.setVisibility(View.VISIBLE);
-                        }
-                    };
-
-                    //ask user to cancel current warping video if any, or just start
-                    if (WarpService.instance != null && WarpService.instance.started && !WarpService.instance.finished)
-                        Helper.runOnYes("A video is currently being warped, cancel it?", this, runnable);
-                    else runnable.run();
+                    showLytWarp(uriPath);
 
                     break;
                 case VSL_WATCH:
@@ -553,6 +544,64 @@ public class MainActivity extends AppCompatActivity {
                     break;
             }
         }
+    }
+
+    // btn onclicks given own function because they are either called onClick or on permissions granted
+    void clickBtnWarp() {
+        lytMain.setVisibility(View.GONE);
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
+        startActivityForResult(intent, VSL_WARP);
+    }
+
+    void clickBtnWatch() {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
+        startActivityForResult(intent, VSL_WATCH);
+    }
+
+    void showLytWarp(final String uriPath) {
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                // halt WarpService.instance.warper if exists, catch nullpointer just in case
+                try {
+                    if (WarpService.instance != null && WarpService.instance.started && !WarpService.instance.finished)
+                        WarpService.instance.warper.halt = true;
+                } catch (NullPointerException e) {
+                    Helper.log(TAG, "WarpService.instance became null as warper.halt set to true. No harm done.");
+                }
+
+                // wait for service to finish
+                while (WarpService.instance != null) try {
+                    Helper.log(TAG, "Waiting for Warper to be halted...");
+                    Thread.sleep(100);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                //path of chosen video
+                decPath = uriPath;
+
+                // check that file exists, for TestActivity.
+                // I'm getting IllegalArgumentException on mmr.setDataSource right now
+
+                MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+                Helper.log(TAG, "decPath: "+decPath);
+                Helper.log(TAG, "decPath exists(): "+new File(decPath).exists());
+                mmr.setDataSource(decPath);
+                // todo: does this ever return null?
+                decBitrate = (int)Long.parseLong(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE));
+                float scale = Float.parseFloat(boxScale.getText()+"");
+                boxBitrate.setText(""+(int)(seekBitrate.getProgress()/10000f*decBitrate*1.2f*scale*scale));
+
+                //show warp window
+                lytWarp.setVisibility(View.VISIBLE);
+            }
+        };
+
+        //ask user to cancel current warping video if any, or just start
+        if (WarpService.instance != null && WarpService.instance.started && !WarpService.instance.finished)
+            Helper.runOnYes("A video is currently being warped, cancel it?", this, runnable);
+        else runnable.run();
     }
 
     void startWarpService() {
@@ -583,6 +632,29 @@ public class MainActivity extends AppCompatActivity {
     void stopWarpService() {
         Intent serviceIntent = new Intent(this, WarpService.class);
         stopService(serviceIntent);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        // check that all permissions were granted
+        boolean allGranted = true;
+        for (int i=0; i<grantResults.length; i++)
+            allGranted &= grantResults[i] == PackageManager.PERMISSION_GRANTED;
+
+        if (allGranted) {
+            switch (requestCode) {
+                case PERMISSION_WARP:
+                    clickBtnWarp();
+                    break;
+                case PERMISSION_WATCH:
+                    clickBtnWatch();
+                    break;
+            }
+        } else {
+            // permission denied, boo!
+            MainActivity.handle.obtainMessage(HNDL_TOAST, "Permissions must be granted for this app to do anything!").sendToTarget();
+        }
+
     }
 
 }

@@ -11,6 +11,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Fix frame-jump
 - Fix occasional exclusion of first/last frames from batch
 
+## [0.0.6] - 2019-01-15
+### Added
+- Instrumented Testing with Espresso and GrantPermissionRule
+
+### Changed
+- Video now in LinearLayout, stretches to fit (preserves aspect ratio)
+- "Invert Warp" changed to "Flip Warp" and moved closer to warpMode spinner
+- Permissions requested on btnWarp or btnWatch pressed, toast shown on permission denial
+
+### Fixed
+- Foreground Service permission now in manifest
+
 ## [0.0.5] - 2018-12-03
 ### Added
 - Warning when overwriting video

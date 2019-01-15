@@ -27,7 +27,15 @@ import java.util.regex.Pattern;
  */
 public class Helper {
 
-    public static void getPermissions(Activity activity, Context context, String[] permissions) {
+    /**
+     *
+     * @param activity
+     * @param context
+     * @param permissions
+     * @param requestCode
+     * @return true if permissions already granted, false if request is made
+     */
+    public static boolean getPermissions(Activity activity, Context context, String[] permissions, int requestCode) {
         //check whech permissions we dont have yet
         int count = 0; boolean[] needPermission = new boolean[permissions.length];
         for (int i = 0; i < permissions.length; i++) {
@@ -38,7 +46,7 @@ public class Helper {
             }
         }
 
-        if (count == 0) return;
+        if (count == 0) return true;
 
         //make a nice array for them
         String[] needed = new String[count];
@@ -47,8 +55,8 @@ public class Helper {
             if (needPermission[i]) needed[count++] = permissions[i];
 
         //request needed permissions
-        ActivityCompat.requestPermissions(activity, needed, 0); //my signature code
-
+        ActivityCompat.requestPermissions(activity, needed, requestCode);
+        return false;
     }
 
     public static void deleteRecursive(File fileOrDirectory) {

@@ -3,7 +3,13 @@
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
-    <color name="holoDarker">#0088B5</color>
+
+    <!--<color name="gui_light">#d7d7d7</color>-->
+    <!--<color name="gui_dark">#b4b4b4</color>-->
+    <!--<color name="gui_darker">#909090</color>-->
+    <color name="gui_light">#33b5e5</color>
+    <color name="gui_dark">#0088b5</color>
+    <color name="gui_darker">#0099cc</color>
 
     <color name="progActivated">#FF4081</color>
     <color name="progNormal">#441020</color>
