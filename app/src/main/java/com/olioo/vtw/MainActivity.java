@@ -193,9 +193,12 @@ public class MainActivity extends AppCompatActivity {
     public FrameLayout emptySpaceWarp;
     public jEditText boxFileName;
     public Spinner spinWarpType;
-    public Switch swtInvert;
     public jEditText boxSeconds;
     public SeekBar seekSeconds;
+
+    public Button btnAdvanced;
+    public LinearLayout lytAdvanced;
+    public Switch swtInvert;
     public Switch swtTrimEnds;
     public jEditText boxScale;
     public SeekBar seekScale;
@@ -237,9 +240,12 @@ public class MainActivity extends AppCompatActivity {
         emptySpaceWarp = findViewById(R.id.emptySpaceWarp);
         boxFileName = findViewById(R.id.boxFileName);
         spinWarpType = findViewById(R.id.spinWarpType);
-        swtInvert = findViewById(R.id.swtInvert);
         boxSeconds = findViewById(R.id.boxSeconds);
         seekSeconds = findViewById(R.id.seekSeconds);
+
+        btnAdvanced = findViewById(R.id.btnAdvanced);
+        lytAdvanced = findViewById(R.id.lytAdvanced);
+        swtInvert = findViewById(R.id.swtInvert);
         swtTrimEnds = findViewById(R.id.swtTrimEnds);
         boxScale = findViewById(R.id.boxScale);
         seekScale = findViewById(R.id.seekScale);
@@ -350,12 +356,26 @@ public class MainActivity extends AppCompatActivity {
             @Override public void onStopTrackingTouch(SeekBar seekBar) { }
         });
 
+        btnAdvanced.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (lytAdvanced.getVisibility() == View.VISIBLE) {
+                    lytAdvanced.setVisibility(View.GONE);
+                    btnAdvanced.setText("SHOW ADVANCED");
+                } else {
+                    lytAdvanced.setVisibility(View.VISIBLE);
+                    btnAdvanced.setText("HIDE ADVANCED");
+                }
+            }
+        });
+
         btnCancel.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 decPath = null;
-                lytWarp.setVisibility(View.GONE);
-                lytMain.setVisibility(View.VISIBLE);
+                guiByState();
+//                lytWarp.setVisibility(View.GONE);
+//                lytMain.setVisibility(View.VISIBLE);
             }
         });
 
@@ -378,6 +398,7 @@ public class MainActivity extends AppCompatActivity {
 
                         decPath = null; // gui state based on this
                         handle.obtainMessage(HNDL_HIDE_KEYBOARD, lytWarp).sendToTarget();
+                        // we don't use guiByState here because instance may not immediately pop up
                         lytWarp.setVisibility(View.GONE);
                         lytWarping.setVisibility(View.VISIBLE);
                     }
@@ -548,7 +569,6 @@ public class MainActivity extends AppCompatActivity {
 
     // btn onclicks given own function because they are either called onClick or on permissions granted
     void clickBtnWarp() {
-        lytMain.setVisibility(View.GONE);
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
         startActivityForResult(intent, VSL_WARP);
     }
@@ -580,10 +600,6 @@ public class MainActivity extends AppCompatActivity {
 
                 //path of chosen video
                 decPath = uriPath;
-
-                // check that file exists, for TestActivity.
-                // I'm getting IllegalArgumentException on mmr.setDataSource right now
-
                 MediaMetadataRetriever mmr = new MediaMetadataRetriever();
                 Helper.log(TAG, "decPath: "+decPath);
                 Helper.log(TAG, "decPath exists(): "+new File(decPath).exists());
@@ -594,7 +610,7 @@ public class MainActivity extends AppCompatActivity {
                 boxBitrate.setText(""+(int)(seekBitrate.getProgress()/10000f*decBitrate*1.2f*scale*scale));
 
                 //show warp window
-                lytWarp.setVisibility(View.VISIBLE);
+                guiByState();
             }
         };
 

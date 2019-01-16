@@ -11,6 +11,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Fix frame-jump
 - Fix occasional exclusion of first/last frames from batch
 
+## [0.0.7] - 2019-01-16
+### Added
+- 'Show/Hide Advanced' in lytWarp
+
+### Fixed
+- lytMain should now be hidden via guiByState when lytWarp comes up
+
 ## [0.0.6] - 2019-01-15
 ### Added
 - Instrumented Testing with Espresso and GrantPermissionRule
