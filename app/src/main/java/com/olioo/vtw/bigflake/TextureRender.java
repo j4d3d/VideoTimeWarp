@@ -401,7 +401,10 @@ public class TextureRender {
         batFBOIds = new int[Warper.self.batchSize];
         GLES20.glGenTextures(Warper.self.batchSize, batTexIds, 0);
         GLES20.glGenFramebuffers(Warper.self.batchSize, batFBOIds, 0);
+        checkGlError("before 7, after genFrameBuffers and genTextures");
+
         for (int i=0; i<Warper.self.batchSize; i++) {
+            Helper.log(TAG, "init batchFrame: "+i);
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, batFBOIds[i]);
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0 + 1 + i);
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, batTexIds[i]);

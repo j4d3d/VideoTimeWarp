@@ -64,7 +64,7 @@ public class Warper extends AndroidTestCase {
     boolean justOneBatch = false; // set to true if only one batch will be rendered
     long drainOlderThan = -1;
     int batchEncodeProg = 0, batchFloor = 0;
-    public int batchSize = 16;
+    public int batchSize = 4;
 
     public Warper(WarpArgs args) {
         self = this;
