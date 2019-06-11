@@ -11,6 +11,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Fix frame-jump
 - Fix occasional exclusion of first/last frames from batch
 
+## [0.0.8] - 2019-01-16
+### Changed
+- Batch size is now calculated by creating frames until a glError is caught
+
 ## [0.0.7] - 2019-01-16
 ### Added
 - 'Show/Hide Advanced' in lytWarp

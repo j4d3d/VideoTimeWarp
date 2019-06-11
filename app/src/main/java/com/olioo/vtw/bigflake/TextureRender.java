@@ -18,6 +18,9 @@ package com.olioo.vtw.bigflake;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 import android.graphics.SurfaceTexture;
@@ -191,6 +194,8 @@ public class TextureRender {
     private int cframeTimeHandle; // time of current decoded frame, being drawn to batch frame
     private int warpAmountHandle;
 
+    Warper warper; // reference set by Warper when creating OutputSurface
+
     public TextureRender() {
         mTriangleVertices = ByteBuffer.allocateDirect(
                 mTriangleVerticesData.length * FLOAT_SIZE_BYTES)
@@ -249,6 +254,7 @@ public class TextureRender {
             GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
         } else GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT);
+        checkGlError("glClear");
 
         GLES20.glUseProgram(mProgram2);
         checkGlError("glUseProgram");
@@ -396,8 +402,60 @@ public class TextureRender {
 //        Warper.self.batchSize = (int)(Math.floor(maxPixels - sframePixels) / bframePixels);
 //        Helper.log(TAG, "batchSize: "+Warper.self.batchSize);
 
+        // we dont know how many batframes we'll be able to create
+        List<Integer> listBatTexIds = new ArrayList<>();
+        List<Integer> listBatFBOIds = new ArrayList<>();
+        int[] batTexId = new int[1];
+        int[] batFBOId = new int[1];
+        for (int i=0; i<Warper.self.batchSize; i++) {
+            GLES20.glGenTextures(1, batTexId, 0);
+            GLES20.glGenFramebuffers(1, batFBOId, 0);
+            checkGlError("before 7, after genFrameBuffers and genTextures");
+
+            Helper.log(TAG, "init batchFrame: "+i);
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, batFBOId[0]);
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE0 + 1 + i);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, batTexId[0]);
+            GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, Warper.args.outWidth, Warper.args.outHeight, 0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null);
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
+
+            try {
+                checkGlError("after 7");
+            } catch (RuntimeException e) {
+                Helper.log(TAG, "batchFrame init failed on frame "+i+", setting as new batchSize.");
+                Warper.self.batchSize = i;
+                e.printStackTrace();
+                break;
+            }
+
+            GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, batTexId[0], 0);
+            checkGlError("after 8");
+
+            if (GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER) != GLES20.GL_FRAMEBUFFER_COMPLETE) {
+                throw new IllegalStateException("GL_FRAMEBUFFER status incomplete");
+            }
+
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+
+            listBatTexIds.add(batTexId[0]);
+            listBatFBOIds.add(batFBOId[0]);
+        }
+
+        // convert lists to arrays
+        batTexIds = new int[listBatTexIds.size()];
+        batFBOIds = new int[listBatFBOIds.size()];
+        for (int i=0; i<Warper.self.batchSize; i++) {
+            batTexIds[i] = listBatTexIds.get(i);
+            batFBOIds[i] = listBatFBOIds.get(i);
+        }
+
+
         // batch vars
-        batTexIds = new int[Warper.self.batchSize];
+        /*batTexIds = new int[Warper.self.batchSize];
         batFBOIds = new int[Warper.self.batchSize];
         GLES20.glGenTextures(Warper.self.batchSize, batTexIds, 0);
         GLES20.glGenFramebuffers(Warper.self.batchSize, batFBOIds, 0);
@@ -413,7 +471,14 @@ public class TextureRender {
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR);
-            checkGlError("after 7");
+            try {
+                checkGlError("after 7");
+            } catch (RuntimeException e) {
+                Helper.log(TAG, "batchFrame init failed on frame "+i+", setting as new batchSize.");
+                warper.batchSize = i;
+                e.printStackTrace();
+                break;
+            }
 
             GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0, GLES20.GL_TEXTURE_2D, batTexIds[i], 0);
             checkGlError("after 8");
@@ -424,7 +489,7 @@ public class TextureRender {
 
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
-        }
+        }*/
         checkGlError("after batch tex/fbos initiated");
     }
 

@@ -123,7 +123,7 @@ public class WarpService extends Service {
                     warper = new Warper(args);
                     warper.warp();
                 } catch (Exception e) { e.printStackTrace(); }
-                finally { warper.release(); }
+                finally { if (warper != null) warper.release(); }
 
                 String warpDonePath = args.encodePath; // gets set to null if aborted
 
