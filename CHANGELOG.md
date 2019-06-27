@@ -11,7 +11,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Fix frame-jump
 - Fix occasional exclusion of first/last frames from batch
 
-## [0.0.8] - 2019-01-16
+## [0.0.9] - 2019-27-19
+### Changed
+- Enabled SPINTIMER auto shutoff if no warp progress made in 2h, not very well tested but at least safe.
+
+## [0.0.8] - 2019-15-19
 ### Changed
 - Batch size is now calculated by creating frames until a glError is caught
 

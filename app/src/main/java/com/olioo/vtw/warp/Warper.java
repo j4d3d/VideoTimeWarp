@@ -28,7 +28,8 @@ public class Warper extends AndroidTestCase {
     public final boolean VERBOSE = true;
     public final boolean WORK_AROUND_BUGS = true;
     public final int TIMEOUT_USEC = 10000;
-    public final int SPINTIMEOUT = 6000; //halt warp if no frame encoded for duration
+    public final int SPINTIMEOUT = 120 * 60 * 1000; //safety timer that kills service if no frames encoded/decoded
+    // a SPINTIMEOUT of 1h should do, though it might pause for that long if you do a long phonecall
 
     public static Warper self;
     public static WarpArgs args;
@@ -140,7 +141,7 @@ public class Warper extends AndroidTestCase {
             long thisMS = System.currentTimeMillis();
             spinTime += thisMS - lastMS;
             lastMS = thisMS;
-            if (false && spinTime > SPINTIMEOUT) {
+            if (spinTime > SPINTIMEOUT) {
                 halt = true;
                 Helper.log(TAG, "Warper has spun for "+SPINTIMEOUT+"ms, timed out.");
             }
