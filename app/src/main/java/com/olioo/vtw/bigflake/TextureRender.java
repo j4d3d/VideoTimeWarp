@@ -392,10 +392,21 @@ public class TextureRender {
         checkGlError("glTexParameter");
 
         // calc batch size
-//        int[] maxSize = new int[1];
-//        GLES20.glGetIntegerv(GLES10.GL_MAX_TEXTURE_SIZE, maxSize, 0);
-//        int[] maxNum = new int[1];
-//        GLES20.glGetIntegerv(GLES20.GL_MAX_TEXTURE_IMAGE_UNITS, maxNum, 0);
+        int[] maxCombined = new int[1];
+        GLES20.glGetIntegerv(GLES20.GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, maxCombined, 0);
+        Log.d(TAG, "MAX_COMBINED_TEXTURE_IMAGE_UNITS: "+maxCombined[0]);
+
+        int[] maxSize = new int[1];
+        GLES20.glGetIntegerv(GLES10.GL_MAX_TEXTURE_SIZE, maxSize, 0);
+        Log.d(TAG, "MAX_TEXTURE_SIZE: "+maxSize[0]);
+
+        int[] maxNum = new int[1];
+        GLES20.glGetIntegerv(GLES20.GL_MAX_TEXTURE_IMAGE_UNITS, maxNum, 0);
+        Log.d(TAG, "MAX_TEXTURE_IMAGE_UNITS: "+maxNum[0]);
+
+        Warper.self.batchSize = maxCombined[0] - 1;
+
+
 //        int maxPixels = maxSize[0] * maxNum[0];
 //        int sframePixels = Warper.args.decWidth * Warper.args.decHeight;
 //        int bframePixels = Warper.args.outWidth * Warper.args.outHeight;
@@ -414,9 +425,13 @@ public class TextureRender {
 
             Helper.log(TAG, "init batchFrame: "+i);
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, batFBOId[0]);
+            checkGlError("glBindFrambuff");
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0 + 1 + i);
+            checkGlError("glActiveTex");
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, batTexId[0]);
+            checkGlError("glBindTex");
             GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, Warper.args.outWidth, Warper.args.outHeight, 0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null);
+            checkGlError("glTexImg2D");
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE);
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE);
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);

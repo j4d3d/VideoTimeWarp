@@ -7,9 +7,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
+### Todo
 - About section with settings glossary (bitrate, framerate, etc.)
 - Fix frame-jump
 - Fix occasional exclusion of first/last frames from batch
+
+## [0.0.10] - 2019-09-18
+### Changed
+- Limit batchsize to GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS
 
 ## [0.0.9] - 2019-27-19
 ### Changed
