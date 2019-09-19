@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Changed
 - Limit batchsize to GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS
 - Hide non-crucial info from lytWarping, it was distracting. Might make revealable in the future.
+- Button labels to more accurately reflect usage
 
 ## [0.0.9] - 2019-27-19 what are these dates lol
 ### Changed

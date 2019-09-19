@@ -31,7 +31,9 @@
         android:id="@+id/lytGUI"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="visible">
+        android:visibility="visible"
+        tools:layout_editor_absoluteX="0dp"
+        tools:layout_editor_absoluteY="0dp">
 
         <android.support.constraint.ConstraintLayout
             android:id="@+id/lytMain"
@@ -49,9 +51,11 @@
 
             <Button
                 android:id="@+id/btnWarp"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="WARP"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:text="WARP VIDEO"
                 app:layout_constraintBottom_toTopOf="@+id/btnWatch"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent" />
@@ -60,7 +64,9 @@
                 android:id="@+id/btnWatch"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="WATCH"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:text="VIDEO PLAYER"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent" />
@@ -70,7 +76,7 @@
             android:id="@+id/lytWarping"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:visibility="visible"
+            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -392,7 +398,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="WATCH" />
+                    android:text="VIDEO PLAYER" />
 
                 <Button
                     android:id="@+id/btnHalt"
