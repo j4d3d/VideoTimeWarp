@@ -50,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
     public static final int HNDL_WARP_DONE = 0;
     public static final int HNDL_PREVIEW_BMP = 1;
     public static final int HNDL_UPDATE_PROGRESS = 2;
+    public static final int HNDL_UPDATE_STATUS = 7;
     public static final int HNDL_HIDE_KEYBOARD = 3;
     public static final int HNDL_TOAST = 4;
     public static final int HNDL_UPDATE_GUI = 5;
@@ -102,6 +103,9 @@ public class MainActivity extends AppCompatActivity {
                 switch (msg.what) {
 //                    case HNDL_PREVIEW_BMP: imageView.setImageBitmap((Bitmap)msg.obj); break;
                     case HNDL_UPDATE_PROGRESS: progWarp.setProgress((int)msg.obj); break;
+                    case HNDL_UPDATE_STATUS:
+                        txtStatus.setText((String)msg.obj);
+                        break;
                     case HNDL_WARP_DONE:
                         Helper.log(TAG, "Warp done!");
                         stopWarpService();
@@ -209,10 +213,10 @@ public class MainActivity extends AppCompatActivity {
     public Button btnCancel;
     public Button btnStart;
 
-
     public ConstraintLayout lytWarping;
     public FrameLayout emptySpaceWarping;
     public ProgressBar progWarp;
+    public TextView txtStatus;
     public TextView txtFilename;
     public TextView txtWarptype;
     public TextView txtSeconds;
@@ -257,6 +261,8 @@ public class MainActivity extends AppCompatActivity {
         btnStart = findViewById(R.id.btnStart);
 
         lytWarping = findViewById(R.id.lytWarping);
+        progWarp = findViewById(R.id.progWarp);
+        txtStatus = findViewById(R.id.txtStatus);
         emptySpaceWarping = findViewById(R.id.emptySpaceWarping);
         txtFilename = findViewById(R.id.txtFilename);
         txtWarptype = findViewById(R.id.txtWarptype);
@@ -268,7 +274,7 @@ public class MainActivity extends AppCompatActivity {
         btnWarpingWatch = findViewById(R.id.btnWarpingWatch);
         btnHalt = findViewById(R.id.btnHalt);
 
-        progWarp = findViewById(R.id.progWarp);
+
 
         btnWarp.setOnClickListener(new View.OnClickListener() {
             @Override

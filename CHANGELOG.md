@@ -11,12 +11,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - About section with settings glossary (bitrate, framerate, etc.)
 - Fix frame-jump
 - Fix occasional exclusion of first/last frames from batch
+- Better 'Time Remaining' estimate
 
 ## [0.0.10] - 2019-09-18
+### Added
+- Status text that sort of explains progress bar
+
 ### Changed
 - Limit batchsize to GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS
+- Hide non-crucial info from lytWarping, it was distracting. Might make revealable in the future.
 
-## [0.0.9] - 2019-27-19
+## [0.0.9] - 2019-27-19 what are these dates lol
 ### Changed
 - Enabled SPINTIMER auto shutoff if no warp progress made in 2h, not very well tested but at least safe.
 

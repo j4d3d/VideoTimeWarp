@@ -68,35 +68,58 @@
 
         <android.support.constraint.ConstraintLayout
             android:id="@+id/lytWarping"
-            android:layout_width="320dp"
+            android:layout_width="0dp"
             android:layout_height="0dp"
-            android:visibility="gone"
+            android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
-            <ProgressBar
-                android:id="@+id/progWarp"
-                style="?android:attr/progressBarStyleHorizontal"
-                android:layout_width="0dp"
+            <LinearLayout
+                android:layout_width="320dp"
                 android:layout_height="wrap_content"
-                android:max="10000"
-                android:progress="0"
-                android:progressDrawable="@drawable/progbar"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:background="@color/gui_dark"
+                android:orientation="vertical"
+                android:padding="8dp"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintStart_toStartOf="parent">
+
+                <ProgressBar
+                    android:id="@+id/progWarp"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:max="10000"
+                    android:progress="0"
+                    android:progressDrawable="@drawable/progbar"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/txtStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@color/gui_light"
+                    android:padding="4dp"
+                    android:text="Preparing to warp"
+                    android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/scrollView3" />
+            </LinearLayout>
 
             <ScrollView
                 android:id="@+id/scrollView3"
-                android:layout_width="0dp"
+                android:layout_width="320dp"
                 android:layout_height="0dp"
                 android:fillViewport="true"
                 app:layout_constraintBottom_toTopOf="@+id/linBTN1"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/progWarp">
+                app:layout_constraintStart_toStartOf="parent">
 
                 <android.support.constraint.ConstraintLayout
                     android:layout_width="match_parent"
@@ -124,191 +147,200 @@
                         android:padding="4dp"
                         app:layout_constraintBottom_toBottomOf="parent">
 
-                        <RelativeLayout
+                        <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
-                            android:layout_margin="4dp"
-                            android:background="@color/gui_light"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal"
-                            android:padding="4dp"
-                            tools:layout_editor_absoluteX="8dp"
-                            tools:layout_editor_absoluteY="8dp">
+                            android:orientation="vertical"
+                            android:visibility="gone"
+                            tools:layout_editor_absoluteX="160dp"
+                            tools:layout_editor_absoluteY="284dp">
 
-                            <TextView
-                                android:id="@+id/textView8"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_alignParentStart="true"
-                                android:layout_weight="1"
-                                android:text="Filename:"
-                                android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+                            <RelativeLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:layout_margin="4dp"
+                                android:background="@color/gui_light"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal"
+                                android:padding="4dp"
+                                tools:layout_editor_absoluteX="8dp"
+                                tools:layout_editor_absoluteY="8dp">
 
-                            <TextView
-                                android:id="@+id/txtFilename"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_alignParentEnd="true"
-                                android:layout_weight="1"
-                                android:text="-"
-                                android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+                                <TextView
+                                    android:id="@+id/textView8"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_alignParentStart="true"
+                                    android:layout_weight="1"
+                                    android:text="Filename:"
+                                    android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
-                        </RelativeLayout>
+                                <TextView
+                                    android:id="@+id/txtFilename"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_alignParentEnd="true"
+                                    android:layout_weight="1"
+                                    android:text="-"
+                                    android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
-                        <RelativeLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:layout_margin="4dp"
-                            android:background="@color/gui_light"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal"
-                            android:padding="4dp"
-                            tools:layout_editor_absoluteX="8dp"
-                            tools:layout_editor_absoluteY="8dp">
+                            </RelativeLayout>
 
-                            <TextView
-                                android:id="@+id/textView10"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_alignParentStart="true"
-                                android:layout_weight="1"
-                                android:text="Warptype:"
-                                android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+                            <RelativeLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:layout_margin="4dp"
+                                android:background="@color/gui_light"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal"
+                                android:padding="4dp"
+                                tools:layout_editor_absoluteX="8dp"
+                                tools:layout_editor_absoluteY="8dp">
 
-                            <TextView
-                                android:id="@+id/txtWarptype"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_alignParentEnd="true"
-                                android:layout_weight="1"
-                                android:text="-"
-                                android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+                                <TextView
+                                    android:id="@+id/textView16"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_alignParentStart="true"
+                                    android:layout_weight="1"
+                                    android:text="Bitrate:"
+                                    android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
-                        </RelativeLayout>
+                                <TextView
+                                    android:id="@+id/txtBitrate"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_alignParentEnd="true"
+                                    android:layout_weight="1"
+                                    android:text="-"
+                                    android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
-                        <RelativeLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:layout_margin="4dp"
-                            android:background="@color/gui_light"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal"
-                            android:padding="4dp"
-                            tools:layout_editor_absoluteX="8dp"
-                            tools:layout_editor_absoluteY="8dp">
+                            </RelativeLayout>
 
-                            <TextView
-                                android:id="@+id/textView12"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_alignParentStart="true"
-                                android:layout_weight="1"
-                                android:text="Seconds:"
-                                android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+                            <RelativeLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:layout_margin="4dp"
+                                android:background="@color/gui_light"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal"
+                                android:padding="4dp"
+                                tools:layout_editor_absoluteX="8dp"
+                                tools:layout_editor_absoluteY="8dp">
 
-                            <TextView
-                                android:id="@+id/txtSeconds"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_alignParentEnd="true"
-                                android:layout_weight="1"
-                                android:text="-"
-                                android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+                                <TextView
+                                    android:id="@+id/textView14"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_alignParentStart="true"
+                                    android:layout_weight="1"
+                                    android:text="Scale:"
+                                    android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
-                        </RelativeLayout>
+                                <TextView
+                                    android:id="@+id/txtScale"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_alignParentEnd="true"
+                                    android:layout_weight="1"
+                                    android:text="-"
+                                    android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
-                        <RelativeLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:layout_margin="4dp"
-                            android:background="@color/gui_light"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal"
-                            android:padding="4dp"
-                            tools:layout_editor_absoluteX="8dp"
-                            tools:layout_editor_absoluteY="8dp">
+                            </RelativeLayout>
 
-                            <TextView
-                                android:id="@+id/textView14"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_alignParentStart="true"
-                                android:layout_weight="1"
-                                android:text="Scale:"
-                                android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+                            <RelativeLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:layout_margin="4dp"
+                                android:background="@color/gui_light"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal"
+                                android:padding="4dp"
+                                tools:layout_editor_absoluteX="8dp"
+                                tools:layout_editor_absoluteY="8dp">
 
-                            <TextView
-                                android:id="@+id/txtScale"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_alignParentEnd="true"
-                                android:layout_weight="1"
-                                android:text="-"
-                                android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+                                <TextView
+                                    android:id="@+id/textView15"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_alignParentStart="true"
+                                    android:layout_weight="1"
+                                    android:text="Framerate:"
+                                    android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
-                        </RelativeLayout>
+                                <TextView
+                                    android:id="@+id/txtFramerate"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_alignParentEnd="true"
+                                    android:layout_weight="1"
+                                    android:text="-"
+                                    android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
-                        <RelativeLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:layout_margin="4dp"
-                            android:background="@color/gui_light"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal"
-                            android:padding="4dp"
-                            tools:layout_editor_absoluteX="8dp"
-                            tools:layout_editor_absoluteY="8dp">
+                            </RelativeLayout>
 
-                            <TextView
-                                android:id="@+id/textView15"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_alignParentStart="true"
-                                android:layout_weight="1"
-                                android:text="Framerate:"
-                                android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+                            <RelativeLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:layout_margin="4dp"
+                                android:background="@color/gui_light"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal"
+                                android:padding="4dp"
+                                tools:layout_editor_absoluteX="8dp"
+                                tools:layout_editor_absoluteY="8dp">
 
-                            <TextView
-                                android:id="@+id/txtFramerate"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_alignParentEnd="true"
-                                android:layout_weight="1"
-                                android:text="-"
-                                android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+                                <TextView
+                                    android:id="@+id/textView10"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_alignParentStart="true"
+                                    android:layout_weight="1"
+                                    android:text="Warptype:"
+                                    android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
-                        </RelativeLayout>
+                                <TextView
+                                    android:id="@+id/txtWarptype"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_alignParentEnd="true"
+                                    android:layout_weight="1"
+                                    android:text="-"
+                                    android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
-                        <RelativeLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:layout_margin="4dp"
-                            android:background="@color/gui_light"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal"
-                            android:padding="4dp"
-                            tools:layout_editor_absoluteX="8dp"
-                            tools:layout_editor_absoluteY="8dp">
+                            </RelativeLayout>
 
-                            <TextView
-                                android:id="@+id/textView16"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_alignParentStart="true"
-                                android:layout_weight="1"
-                                android:text="Bitrate:"
-                                android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+                            <RelativeLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:layout_margin="4dp"
+                                android:background="@color/gui_light"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal"
+                                android:padding="4dp"
+                                tools:layout_editor_absoluteX="8dp"
+                                tools:layout_editor_absoluteY="8dp">
 
-                            <TextView
-                                android:id="@+id/txtBitrate"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_alignParentEnd="true"
-                                android:layout_weight="1"
-                                android:text="-"
-                                android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+                                <TextView
+                                    android:id="@+id/textView12"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_alignParentStart="true"
+                                    android:layout_weight="1"
+                                    android:text="Seconds:"
+                                    android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
-                        </RelativeLayout>
+                                <TextView
+                                    android:id="@+id/txtSeconds"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_alignParentEnd="true"
+                                    android:layout_weight="1"
+                                    android:text="-"
+                                    android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
+
+                            </RelativeLayout>
+                        </LinearLayout>
 
                         <RelativeLayout
                             android:layout_width="match_parent"
@@ -348,7 +380,7 @@
 
             <LinearLayout
                 android:id="@+id/linBTN1"
-                android:layout_width="match_parent"
+                android:layout_width="320dp"
                 android:layout_height="0dp"
                 android:orientation="horizontal"
                 app:layout_constraintBottom_toBottomOf="parent"

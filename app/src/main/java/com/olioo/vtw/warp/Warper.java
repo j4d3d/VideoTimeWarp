@@ -59,6 +59,7 @@ public class Warper extends AndroidTestCase {
     boolean extractorReachedEnd = false;
     boolean encoderOutputAvailable, decoderOutputAvailable;
     int currentFrame = 0;
+    int currentBatch = 0;
     float startOffset, endPad; // for trimEnds setting
     // batch stuff
     boolean encodingBatch = false;
@@ -215,14 +216,7 @@ public class Warper extends AndroidTestCase {
                     if (doRender) {
                         if (VERBOSE) Helper.log(TAG, "currentFrame: "+currentFrame+", ptime: "+info.presentationTimeUs);
 
-                        // track progress
-                        if (MainActivity.handle != null)
-                            try {
-                                float prog = (float)info.presentationTimeUs / frameTimes.get(frameTimes.size()-2);
-                                MainActivity.handle.obtainMessage(MainActivity.HNDL_UPDATE_PROGRESS, (int)(10000*prog)).sendToTarget();
-                            } catch (NullPointerException e) {
-                                if (VERBOSE) Helper.log(TAG, "MainActivity.handle became null as we sent it a message.");
-                            }
+
 
                         // This waits for the image and renders it after it arrives.
                         outputSurface.awaitNewImage();
@@ -235,10 +229,22 @@ public class Warper extends AndroidTestCase {
 
                         // ~~~ ONFRAME ~~~
 
+                        float bfloorTime = frameTimes.get((int)Math.max(batchFloor-args.amount, 0));
                         float bceilTime = (batchFloor + batchSize - 1) * 1000000L / args.frameRate + startOffset;
                         float lframeTime = frameTimes.get(Math.max(0, currentFrame-1));
                         float nframeTime = frameTimes.get(Math.min(currentFrame+1, frameTimes.size()-2));
                         float cframeTime = frameTimes.get(currentFrame);
+
+                        // track progress
+                        if (MainActivity.handle != null)
+                            try {
+                                float prog = (float)info.presentationTimeUs / frameTimes.get(frameTimes.size()-2);
+                                float batchProg = 1f - (bceilTime-cframeTime) / (bceilTime-bfloorTime);
+                                MainActivity.handle.obtainMessage(MainActivity.HNDL_UPDATE_PROGRESS, (int)(10000*prog)).sendToTarget();
+                                MainActivity.handle.obtainMessage(MainActivity.HNDL_UPDATE_STATUS, "Generating batch: "+String.format("%.2f", batchProg*100f)+"%").sendToTarget();
+                            } catch (NullPointerException e) {
+                                if (VERBOSE) Helper.log(TAG, "MainActivity.handle became null as we sent it a message.");
+                            }
 
                         if (lframeTime <= bceilTime)
                             for (int i=0; i<batchSize; i++) {
@@ -300,6 +306,7 @@ public class Warper extends AndroidTestCase {
         if (VERBOSE) Helper.log(TAG, "swapBuffers");
         inputSurface.swapBuffers();
         batchEncodeProg++;
+        MainActivity.handle.obtainMessage(MainActivity.HNDL_UPDATE_STATUS, "Encoding batch frames "+batchEncodeProg+"/"+batchSize).sendToTarget();
         // est. time remaining variables
         WarpService.instance.encodedLength = batchTime / 1000;
         WarpService.instance.lastBatchFrameTime = System.currentTimeMillis();
