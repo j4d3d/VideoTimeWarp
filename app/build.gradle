@@ -6,8 +6,8 @@ android {
         applicationId "com.olioo.vtw"
         minSdkVersion 18
         targetSdkVersion 28
-        versionCode 7
-        versionName "0.0.9"
+        versionCode 8
+        versionName "0.0.10"
 //        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
