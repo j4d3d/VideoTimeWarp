@@ -102,6 +102,8 @@ public class WarpService extends Service {
     }
 
     public void startWarp() {
+        MainActivity.handle.obtainMessage(MainActivity.HNDL_UPDATE_STATUS, "Preparing to warp!").sendToTarget();
+
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -124,6 +126,9 @@ public class WarpService extends Service {
                     warper.warp();
                 } catch (Exception e) { e.printStackTrace(); }
                 finally { if (warper != null) warper.release(); }
+
+                MainActivity.handle.obtainMessage(MainActivity.HNDL_UPDATE_STATUS, "Warping done, scanning file.").sendToTarget();
+
 
                 String warpDonePath = args.encodePath; // gets set to null if aborted
 

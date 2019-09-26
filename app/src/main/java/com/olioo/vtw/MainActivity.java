@@ -115,6 +115,7 @@ public class MainActivity extends AppCompatActivity {
                             videoView.start();
                         }
                         guiByState();
+                        txtStatus.setText(""); // clear text
                         break;
                     //case HNDL_WATCH_VID: break;
                     case HNDL_HIDE_KEYBOARD:
