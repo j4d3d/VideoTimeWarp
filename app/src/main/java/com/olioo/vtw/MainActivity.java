@@ -533,7 +533,7 @@ public class MainActivity extends AppCompatActivity {
         if (_instance.anticipatedVideoDuration != 0) {
             long elapsed = _instance.lastBatchFrameTime - _instance.birth;
             float prog = (float) _instance.encodedLength / _instance.anticipatedVideoDuration;
-            if (prog == 0) txtTimeleft.setText("Calculating...");
+            if (prog == 0) txtTimeleft.setText("After first batch...");
             else {
                 float remaining = (elapsed / prog) - (System.currentTimeMillis() - _instance.birth);
                 int hours = (int) Math.floor(remaining / 3600000);

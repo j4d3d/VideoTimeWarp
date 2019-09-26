@@ -59,7 +59,6 @@ public class Warper extends AndroidTestCase {
     boolean extractorReachedEnd = false;
     boolean encoderOutputAvailable, decoderOutputAvailable;
     int currentFrame = 0;
-    int currentBatch = 0;
     float startOffset, endPad; // for trimEnds setting
     // batch stuff
     boolean encodingBatch = false;
@@ -241,7 +240,7 @@ public class Warper extends AndroidTestCase {
                                 float prog = (float)info.presentationTimeUs / frameTimes.get(frameTimes.size()-2);
                                 float batchProg = 1f - (bceilTime-cframeTime) / (bceilTime-bfloorTime);
                                 MainActivity.handle.obtainMessage(MainActivity.HNDL_UPDATE_PROGRESS, (int)(10000*prog)).sendToTarget();
-                                MainActivity.handle.obtainMessage(MainActivity.HNDL_UPDATE_STATUS, "Generating batch: "+String.format("%.2f", batchProg*100f)+"%").sendToTarget();
+                                MainActivity.handle.obtainMessage(MainActivity.HNDL_UPDATE_STATUS, "Generating batch "+(batchFloor/batchSize+1)+": "+String.format("%.2f", batchProg*100f)+"%").sendToTarget();
                             } catch (NullPointerException e) {
                                 if (VERBOSE) Helper.log(TAG, "MainActivity.handle became null as we sent it a message.");
                             }
