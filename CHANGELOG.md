@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [0.0.11] - 2019-09-26
 ### Added
+- 'HOW TO USE' button on lytMain :) links to http://workmorer.com/apps/video-time-warp/help
 - More status text updates
 
 ### Changed

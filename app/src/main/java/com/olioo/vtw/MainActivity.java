@@ -193,6 +193,7 @@ public class MainActivity extends AppCompatActivity {
     public ConstraintLayout lytMain;
     public Button btnWarp;
     public Button btnWatch;
+    public Button btnHelp;
 
     public ConstraintLayout lytWarp;
     public FrameLayout emptySpaceWarp;
@@ -240,6 +241,7 @@ public class MainActivity extends AppCompatActivity {
         lytMain = findViewById(R.id.lytMain);
         btnWarp = findViewById(R.id.btnWarp);
         btnWatch = findViewById(R.id.btnWatch);
+        btnHelp = findViewById(R.id.btnHelp);
 
         lytWarp = findViewById(R.id.lytWarp);
         emptySpaceWarp = findViewById(R.id.emptySpaceWarp);
@@ -308,6 +310,13 @@ public class MainActivity extends AppCompatActivity {
                 if (granted) {
                     clickBtnWatch();
                 }
+            }
+        });
+
+        btnHelp.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                clickBtnHelp();
             }
         });
 
@@ -583,6 +592,13 @@ public class MainActivity extends AppCompatActivity {
     void clickBtnWatch() {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
         startActivityForResult(intent, VSL_WATCH);
+    }
+
+    void clickBtnHelp() {
+        String url = "http://www.workmorer.com/apps/video-time-warp/help";
+        Intent i = new Intent(Intent.ACTION_VIEW);
+        i.setData(Uri.parse(url));
+        startActivity(i);
     }
 
     void showLytWarp(final String uriPath) {
