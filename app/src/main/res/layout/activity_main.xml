@@ -419,7 +419,6 @@
             android:id="@+id/lytWarp"
             android:layout_width="320dp"
             android:layout_height="0dp"
-            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -484,7 +483,7 @@
 
                             <com.olioo.vtw.gui.jEditText
                                 android:id="@+id/boxFileName"
-                                android:layout_width="200dp"
+                                android:layout_width="180dp"
                                 android:layout_height="wrap_content"
                                 android:layout_alignParentEnd="true"
                                 android:layout_weight="1"
@@ -513,12 +512,12 @@
                                 android:layout_height="wrap_content"
                                 android:layout_alignParentStart="true"
                                 android:layout_weight="1"
-                                android:text="Warptype:"
+                                android:text="Warp Mode:"
                                 android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
                             <Spinner
                                 android:id="@+id/spinWarpType"
-                                android:layout_width="200dp"
+                                android:layout_width="180dp"
                                 android:layout_height="wrap_content"
                                 android:layout_alignParentEnd="true"
                                 android:background="@drawable/textbox_bg_light"
@@ -584,8 +583,7 @@
                             android:id="@+id/lytAdvanced"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
-                            android:orientation="vertical"
-                            android:visibility="gone">
+                            android:orientation="vertical">
 
                             <RelativeLayout
                                 android:layout_width="match_parent"
@@ -605,7 +603,7 @@
                                     android:layout_height="wrap_content"
                                     android:layout_marginRight="8dp"
                                     android:layout_weight="1"
-                                    android:text="Invert Warp:"
+                                    android:text="Invert Warp Mode:"
                                     android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
                                 <Switch
@@ -634,7 +632,7 @@
                                     android:layout_height="wrap_content"
                                     android:layout_alignParentStart="true"
                                     android:layout_weight="1"
-                                    android:text="Framerate"
+                                    android:text="Framerate:"
                                     android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
                                 <SeekBar
@@ -648,7 +646,7 @@
                                     android:max="10000"
                                     android:paddingLeft="4dp"
                                     android:paddingRight="4dp"
-                                    android:progress="5000" />
+                                    android:progress="4000" />
 
                                 <com.olioo.vtw.gui.jEditText
                                     android:id="@+id/boxFramerate"
@@ -659,7 +657,7 @@
                                     android:background="@drawable/textbox_bg_light"
                                     android:ems="10"
                                     android:inputType="number"
-                                    android:text="30"
+                                    android:text="24"
                                     android:textAlignment="center" />
 
                             </RelativeLayout>
@@ -699,7 +697,7 @@
 
                                 <com.olioo.vtw.gui.jEditText
                                     android:id="@+id/boxBitrate"
-                                    android:layout_width="80dp"
+                                    android:layout_width="100dp"
                                     android:layout_height="wrap_content"
                                     android:layout_alignParentEnd="true"
                                     android:layout_weight="1"
@@ -776,7 +774,7 @@
                                     android:layout_height="wrap_content"
                                     android:layout_alignParentStart="true"
                                     android:layout_weight="1"
-                                    android:text="Trim Start/End:"
+                                    android:text="Trim Video Start/End:"
                                     android:textAppearance="@style/TextAppearance.AppCompat.Medium" />
 
                                 <Switch

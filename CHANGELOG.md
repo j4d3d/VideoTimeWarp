@@ -13,6 +13,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Fix occasional exclusion of first/last frames from batch
 - Better 'Time Remaining' estimate
 
+## [0.0.11] - 2019-09-26
+### Added
+- More status text updates
+
+### Changed
+- Rounded GUI corners
+- Reordered lytWarp's advanced panel options
+- Retitled Warptype to warpmode, so that Invert Warp can become Invert Warp Mode
+- Retitled other options to be more explanatory
+- Lowered default framerate to 24, faster warping and probably not even noticeable
+- Resized some textboxes
+
+### Removed
+- Hiding 'scale' option for now as it doesn't actually speed up warp
+
 ## [0.0.10] - 2019-09-18
 ### Added
 - Status text that sort of explains progress bar
