@@ -235,15 +235,10 @@ public class Warper extends AndroidTestCase {
                         float cframeTime = frameTimes.get(currentFrame);
 
                         // track progress
-                        if (MainActivity.handle != null)
-                            try {
-                                float prog = (float)info.presentationTimeUs / frameTimes.get(frameTimes.size()-2);
-                                float batchProg = 1f - (bceilTime-cframeTime) / (bceilTime-bfloorTime);
-                                MainActivity.handle.obtainMessage(MainActivity.HNDL_UPDATE_PROGRESS, (int)(10000*prog)).sendToTarget();
-                                MainActivity.handle.obtainMessage(MainActivity.HNDL_UPDATE_STATUS, "Generating batch "+(batchFloor/batchSize+1)+": "+String.format("%.2f", batchProg*100f)+"%").sendToTarget();
-                            } catch (NullPointerException e) {
-                                if (VERBOSE) Helper.log(TAG, "MainActivity.handle became null as we sent it a message.");
-                            }
+                        float prog = (float)info.presentationTimeUs / frameTimes.get(frameTimes.size()-2);
+                        float batchProg = 1f - (bceilTime-cframeTime) / (bceilTime-bfloorTime);
+                        MainActivity.HandleMessage(MainActivity.HNDL_UPDATE_PROGRESS, (int)(10000*prog));
+                        MainActivity.HandleMessage(MainActivity.HNDL_UPDATE_STATUS, "Generating batch "+(batchFloor/batchSize+1)+": "+String.format("%.2f", batchProg*100f)+"%");
 
                         if (lframeTime <= bceilTime)
                             for (int i=0; i<batchSize; i++) {
@@ -305,7 +300,7 @@ public class Warper extends AndroidTestCase {
         if (VERBOSE) Helper.log(TAG, "swapBuffers");
         inputSurface.swapBuffers();
         batchEncodeProg++;
-        MainActivity.handle.obtainMessage(MainActivity.HNDL_UPDATE_STATUS, "Encoding batch frames "+batchEncodeProg+"/"+batchSize).sendToTarget();
+        MainActivity.HandleMessage(MainActivity.HNDL_UPDATE_STATUS, "Encoding batch frames "+batchEncodeProg+"/"+batchSize);
         // est. time remaining variables
         WarpService.instance.encodedLength = batchTime / 1000;
         WarpService.instance.lastBatchFrameTime = System.currentTimeMillis();
@@ -315,10 +310,10 @@ public class Warper extends AndroidTestCase {
             if (justOneBatch) {
                 halt = true;
                 encodingBatch = false;
-                MainActivity.handle.obtainMessage(
+                MainActivity.HandleMessage(
                     MainActivity.HNDL_TOAST,
                     "Try using a shorter warp amount, or disabling 'Trim Start/End'."
-                ).sendToTarget();
+                );
                 return;
             }
 

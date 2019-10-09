@@ -102,7 +102,7 @@ public class WarpService extends Service {
     }
 
     public void startWarp() {
-        MainActivity.handle.obtainMessage(MainActivity.HNDL_UPDATE_STATUS, "Preparing to warp!").sendToTarget();
+        MainActivity.HandleMessage(MainActivity.HNDL_UPDATE_STATUS, "Preparing to warp!");
 
         new Thread(new Runnable() {
             @Override
@@ -127,8 +127,7 @@ public class WarpService extends Service {
                 } catch (Exception e) { e.printStackTrace(); }
                 finally { if (warper != null) warper.release(); }
 
-                MainActivity.handle.obtainMessage(MainActivity.HNDL_UPDATE_STATUS, "Warping done, scanning file.").sendToTarget();
-
+                MainActivity.HandleMessage(MainActivity.HNDL_UPDATE_STATUS, "Warping done, scanning file.");
 
                 String warpDonePath = args.encodePath; // gets set to null if aborted
 
@@ -138,8 +137,8 @@ public class WarpService extends Service {
                 if (!exists || encodedLength == 0) {
                     if (exists) {
                         file.delete();
-                        MainActivity.handle.obtainMessage(MainActivity.HNDL_TOAST, "Nothing encoded, video deleted.").sendToTarget();
-                    } else MainActivity.handle.obtainMessage(MainActivity.HNDL_TOAST, "Nothing encoded.").sendToTarget();
+                        MainActivity.HandleMessage(MainActivity.HNDL_TOAST, "Nothing encoded, video deleted.");
+                    } else MainActivity.HandleMessage(MainActivity.HNDL_TOAST, "Nothing encoded.");
                     // send WARP_DONE with null encodePath signifying that file was deleted
                     warpDonePath = null;
                 } else MediaScannerConnection.scanFile(
@@ -157,7 +156,7 @@ public class WarpService extends Service {
 
                 // set instance to null early for guiFromState() to read
                 instance = null;
-                MainActivity.handle.obtainMessage(MainActivity.HNDL_WARP_DONE, warpDonePath).sendToTarget();
+                MainActivity.HandleMessage(MainActivity.HNDL_WARP_DONE, warpDonePath);
 
                 stopSelf();
             }

@@ -696,4 +696,14 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    public static void HandleMessage(int what, Object obj) {
+        if (MainActivity.handle != null) {
+            try {
+                MainActivity.handle.obtainMessage(what, obj).sendToTarget();
+            } catch (NullPointerException e) {
+                Helper.log(TAG, "MainActivity.handle became null as we sent it a message.");
+            }
+        } else Helper.log(TAG, "HandleMessage ignored because MainActivity.handle is currently null.");
+    }
+
 }
