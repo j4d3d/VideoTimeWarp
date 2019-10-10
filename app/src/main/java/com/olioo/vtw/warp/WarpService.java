@@ -125,42 +125,48 @@ public class WarpService extends Service {
                     warper = new Warper(args);
                     warper.warp();
                 } catch (Exception e) { e.printStackTrace(); }
-                finally { if (warper != null) warper.release(); }
+                finally { finishWarpService(); }
 
-                MainActivity.HandleMessage(MainActivity.HNDL_UPDATE_STATUS, "Warping done, scanning file.");
 
-                String warpDonePath = args.encodePath; // gets set to null if aborted
-
-                // mediascan the file afterwards, or delete if nothing encoded
-                File file = new File(args.encodePath);
-                boolean exists = file.exists();
-                if (!exists || encodedLength == 0) {
-                    if (exists) {
-                        file.delete();
-                        MainActivity.HandleMessage(MainActivity.HNDL_TOAST, "Nothing encoded, video deleted.");
-                    } else MainActivity.HandleMessage(MainActivity.HNDL_TOAST, "Nothing encoded.");
-                    // send WARP_DONE with null encodePath signifying that file was deleted
-                    warpDonePath = null;
-                } else MediaScannerConnection.scanFile(
-                        getApplicationContext(),
-                        new String[]{file.getAbsolutePath()},
-                        null,
-                        new MediaScannerConnection.OnScanCompletedListener() {
-                            @Override
-                            public void onScanCompleted(String path, Uri uri) {
-                                Helper.log(TAG, "Scan completed: " + args.encodePath);
-                            }
-                        });
-
-                finished = true;
-
-                // set instance to null early for guiFromState() to read
-                instance = null;
-                MainActivity.HandleMessage(MainActivity.HNDL_WARP_DONE, warpDonePath);
-
-                stopSelf();
             }
         }).start();
+    }
+
+    public void finishWarpService() {
+        if (warper != null) warper.release();
+
+        MainActivity.HandleMessage(MainActivity.HNDL_UPDATE_STATUS, "Warping done, scanning file.");
+
+        String warpDonePath = args.encodePath; // gets set to null if aborted
+
+        // mediascan the file afterwards, or delete if nothing encoded
+        File file = new File(args.encodePath);
+        boolean exists = file.exists();
+        if (!exists || encodedLength == 0) {
+            if (exists) {
+                file.delete();
+                MainActivity.HandleMessage(MainActivity.HNDL_TOAST, "Nothing encoded, video deleted.");
+            } else MainActivity.HandleMessage(MainActivity.HNDL_TOAST, "Nothing encoded.");
+            // send WARP_DONE with null encodePath signifying that file was deleted
+            warpDonePath = null;
+        } else MediaScannerConnection.scanFile(
+                getApplicationContext(),
+                new String[]{file.getAbsolutePath()},
+                null,
+                new MediaScannerConnection.OnScanCompletedListener() {
+                    @Override
+                    public void onScanCompleted(String path, Uri uri) {
+                        Helper.log(TAG, "Scan completed: " + args.encodePath);
+                    }
+                });
+
+        finished = true;
+
+        // set instance to null early for guiFromState() to read
+        instance = null;
+        MainActivity.HandleMessage(MainActivity.HNDL_WARP_DONE, warpDonePath);
+
+        stopSelf();
     }
 
     public boolean vidSaved = false;
@@ -197,6 +203,9 @@ public class WarpService extends Service {
 
     @Override
     public void onDestroy() {
+        if (!finished)
+            finishWarpService();
+
         Helper.log(TAG, "OnDestroy()");
         heartbeat.purge();
         heartbeat.cancel();
