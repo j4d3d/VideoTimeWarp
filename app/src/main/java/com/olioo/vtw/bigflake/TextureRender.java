@@ -172,7 +172,7 @@ public class TextureRender {
             case 6: o += "  float dist = "+String.format("%.4f", (float)Math.sqrt(aRatio/2*aRatio/2 + 1))+";\n"; break;
         }
         o += WARP_FUNCTION[WarpService.instance.warper.args.warpType];
-        if (WarpService.instance.warper.args.invertWarp) o += "  warp = warpAmount - warp;\n";
+        if (!WarpService.instance.warper.args.invertWarp) o += "  warp = warpAmount - warp;\n";
         o += FRAGMENT_SHADER2B;
         return o;
     }
